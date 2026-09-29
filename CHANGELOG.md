@@ -6,6 +6,24 @@
 
 本 CHANGELOG 自 0.1.17 起建立并回填：更早的历史以 GitHub Release 与 git tag 为准。
 
+## [0.3.8] - 2026-09-29
+
+### 变更
+
+- **适配 DSH 0.2.0**：`peerDependencies` / `devDependencies` 中全部
+  `@deepseek-ai/dsh-*` 依赖范围由 `^0.1.7-rc.2` 提升至 `^0.2.0-rc.1` 与 `^0.2.0-rc.2`，
+  `@deepseek-ai/cordis` 提至 `~4.0.4`（peer）/ `^4.0.4`（dev）。
+  0.2.0 起 DSH 会强校验插件 peer 兼容性，范围不跟随会被**整行禁用且不报错**，
+  故本条属对外可见的兼容性变化，抬 patch 版本。
+- **座位遮蔽设计复核**：0.2.0-rc.2 改动了官方 `ui-model-selection` 逾 600 行，
+  已确认官方 `conversation.input.model` 座位**仍未声明 `priority`**，
+  本插件 `priority: -1` 的遮蔽前提不变，源码无需改动。
+  钉子测试 `test/official-seat-shadow.test.mjs` 继续把该不变量钉住。
+- **源码零改动**：`typecheck` / 124 条测试 / `build` 全部通过。
+- **CI 白名单同步**：向 `pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude`
+  追加 67 行新版本，避免 `publish.yml` 的 `pnpm install --frozen-lockfile`
+  被 release-age 策略拦下。
+
 ## [0.3.7] - 2026-09-25
 
 ### 修复

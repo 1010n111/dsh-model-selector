@@ -345,8 +345,8 @@ export const CSS: string = `
 /* 档位读数：拖动时实时跟随 preview，替代此前只有读屏能看到的 aria-valuetext。 */
 .dms-effort-value {
   flex: 0 0 auto;
-  /* 紧贴轨道：8px 会在「Max」这类短标签前留出一段空白。 */
-  margin-left: 4px;
+  /* 左对齐后留一点呼吸：贴太紧显得文字粘在轨道上。 */
+  margin-left: 8px;
   width: 3.4em;
   color: var(--dsw-static-blue-500, #3b82f6);
   font-size: 11px;

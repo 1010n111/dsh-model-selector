@@ -381,8 +381,7 @@ export const EffortSlider = react.memo(function EffortSlider({ state, select, t,
 				/>
 				<span className="dms-effort-knob" aria-hidden="true" />
 			</div>
-			<span className="dms-effort-value">{effortName}</span>
-			{effortDesc === undefined ? null : <span className="dms-effort-desc">{effortDesc}</span>}
+			<span className="dms-effort-value" title={effortDesc ?? effortName}>{effortName}</span>
 			{/* 错误：视觉隐藏的 role=status 供读屏播报，可见错误块同文案。两处容器都
 			    常驻（空时 :empty 隐藏）—— 插入式 live region 的首次播报不可靠。 */}
 			<span className="dms-sr" role="status">{error ?? ''}</span>

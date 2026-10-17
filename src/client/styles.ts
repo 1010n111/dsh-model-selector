@@ -301,10 +301,11 @@ export const CSS: string = `
 .dms-effort {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   width: 100%;
   min-width: 0;
-  min-height: 32px;
+  /* 固定行高：档位名/说明文字长短不参与布局，菜单高度与滑杆位置不会跳动。 */
+  height: 32px;
   color: var(--dsw-alias-label-secondary);
   user-select: none;
   box-sizing: border-box;
@@ -313,21 +314,16 @@ export const CSS: string = `
 .dms-effort-value {
   flex: 0 0 auto;
   margin-left: 8px;
-  min-width: 3.2em;
+  width: 3.6em;
   color: var(--dsw-static-blue-500, #3b82f6);
   font-size: 11px;
   line-height: 16px;
   text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .dms-effort.is-max .dms-effort-value { color: #8b5cf6; }
-/* 官方契约的 efforts[].description，整行展示在滑杆下方。 */
-.dms-effort-desc {
-  flex: 1 0 100%;
-  margin-top: 2px;
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 10px;
-  line-height: 14px;
-}
 .dms-effort-slider {
   /* 由组件写入：滑块中心位置（相对轨道），两端各留 12px（滑块半径）。 */
   --dms-thumb-left: 12px;

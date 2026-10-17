@@ -345,14 +345,14 @@ export const CSS: string = `
 /* 档位读数：拖动时实时跟随 preview，替代此前只有读屏能看到的 aria-valuetext。 */
 .dms-effort-value {
   flex: 0 0 auto;
-  /* 左对齐后留一点呼吸：贴太紧显得文字粘在轨道上。 */
+  /* 读数贴住行右缘（右对齐），宽度随文字收缩：轨道与文字之间只留 8px，
+     不会出现固定宽度里那段空白。 */
   margin-left: 8px;
-  width: 3.4em;
+  width: auto;
   color: var(--dsw-static-blue-500, #3b82f6);
   font-size: 11px;
   line-height: 16px;
-  /* 左对齐：短标签紧贴轨道，空白留在框的右端而不是轨道与文字之间。 */
-  text-align: left;
+  text-align: right;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

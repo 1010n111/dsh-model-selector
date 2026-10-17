@@ -41,6 +41,10 @@
   status 也会变 `selecting`——松手瞬间整片模型列表变灰、RPC 返回又立刻恢复，视觉上
   就是菜单闪一下。现在把「压灰列表」拆到独立的 `data-model-switch`：只有换模型才变灰；
   aria-busy 仍保留给读屏，loading / effort 提交不再触发视觉变灰。
+- **停下瞬间列表上下晃动修复**：选中行滚动 effect 原先依赖整个 `state.current`；
+  effort 提交会替换 current 对象（同 provider/model、新的 reasoningEffort），
+  于是每次松手都会重跑 `scrollSelectedIntoView` 再滚一次。依赖收窄为
+  `state.current?.provider` / `.model`，纯 effort 提交不再触发列表滚动。
 - **刷新后位置跳变修复**：`.dms-effort-slider` 的 `flex-basis: 0` 在轨道里会被读成
   `主尺寸 0` 导致宽度不生长，导致刚打开/每次重渲染后滑块回跳到轨道起点。改为
   `flex: 1 1 auto` + `min-width: 0`。

@@ -747,7 +747,10 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 			});
 		}
 		scrollSelectedIntoView();
-	}, [open, state.groups, state.current, collapsed, hits]);
+	// 只依赖「选中模型的身份」而不是整个 state.current：effort 提交会换掉 current
+	// 对象（同 provider/model、新的 reasoningEffort），若依赖整对象，每次松手都会
+	// 重跑 scrollSelectedIntoView 再滚一次——实机表现就是列表在停下的瞬间上下晃。
+	}, [open, state.groups, state.current?.provider, state.current?.model, collapsed, hits]);
 	// show/close/choose/toggleCollapse 四个 useCallback 必须全部位于下方
 	// `if (!available) return null` 早退之前：hooks 数量不得随渲染分支变化
 	// （React 会直接抛 "Rendered more hooks than during the previous render"）。

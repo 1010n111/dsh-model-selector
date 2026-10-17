@@ -636,6 +636,10 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 	// 空间选边（官方 hook 只负责摆位，不替你选边），两侧共用同一份高度状态。
 	const menuRef = react.useRef<HTMLDivElement | null>(null);
 	const [menuMaxHeight, setMenuMaxHeight] = react.useState(MENU_MAX_HEIGHT);
+	// 拖动 effort 时锁定菜单高度：交互期间任何内部状态（loading 浮层之外的布局、
+	// 文本换行、列表滚动锚定）都不再改变菜单盒尺寸，搜索框与列表不会相对位移。
+	const [lockedHeight, setLockedHeight] = react.useState<number | null>(null);
+	const [lockedPos, setLockedPos] = react.useState<{ left: number; top: number } | null>(null);
 	// 布局生效前测量：用 useEffect 会在首帧绘制后才翻转方向，向下弹场景菜单
 	// 先按默认方向画一帧再跳位，肉眼可见闪错位。
 	react.useLayoutEffect(() => {
@@ -688,6 +692,13 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 	react.useEffect(() => {
 		if (!open) return;
 		searchRef.current?.focus();
+	}, [open]);
+	// 视口变化时释放高度锁，下一次交互重新按新尺寸锁定。
+	react.useEffect(() => {
+		if (!open) return;
+		const release = (): void => { setLockedHeight(null); setLockedPos(null); };
+		window.addEventListener("resize", release);
+		return () => window.removeEventListener("resize", release);
 	}, [open]);
 	// 打开即把当前选中行滚进可视区：选中模型在长列表深处时不用手动翻找。
 	// 手动改 scrollTop 而不用 scrollIntoView，避免连带滚动页面/其它祖先容器。
@@ -778,6 +789,8 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 		setOpen(false);
 		setNotice(null);
 		setQuery("");
+		setLockedHeight(null);
+		setLockedPos(null);
 		if (restoreFocus) queueMicrotask(focusTrigger);
 	}, []);
 	// 外部 pointerdown 关闭与 Escape 一致走 close(true)：搜索框随菜单卸载后
@@ -1037,12 +1050,22 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 					id={`${id}-menu`}
 					ref={menuRef}
 					style={{
-						left: menuPos?.left ?? 0,
-						top: menuPos?.top ?? 0,
+						// 交互期间连位置一起冻结：锚点/视口变化也不会带着菜单走。
+						left: (lockedPos ?? menuPos)?.left ?? 0,
+						top: (lockedPos ?? menuPos)?.top ?? 0,
 						maxHeight: menuMaxHeight,
+						// 交互期间固定高度；未锁定时由内容与 maxHeight 决定。
+						height: lockedHeight ?? undefined,
 						// 官方 hook 在同一提交的 layout effect 里写完坐标才允许绘制；
 						// 首帧坐标为 null 时先藏起来，避免从 (0,0) 闪一下。
 						visibility: menuPos === null ? 'hidden' : undefined,
+					}}
+					onPointerDownCapture={(event) => {
+						// 只在拖 effort 滑杆时锁高：其它操作（搜索/滚动列表）不锁。
+						const target = event.target instanceof Element ? event.target : null;
+						if (target === null || target.closest(".dms-effort") === null) return;
+						setLockedHeight((current) => current ?? menuRef.current?.offsetHeight ?? null);
+						setLockedPos((current) => current ?? (menuPos === null ? null : { left: Number(menuPos.left), top: Number(menuPos.top) }));
 					}}
 					className={'dms-menu dms-menuModel' + (menuAbove ? '' : ' dms-menuBelow')}
 				>

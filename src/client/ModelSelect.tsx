@@ -337,9 +337,9 @@ export const EffortSlider = react.memo(function EffortSlider({ state, select, t,
 	const count = levels.length;
 	const effortName = levels[dmsEffortIndex(levels, effort)]?.name ?? effort;
 	const effortDesc = levels[dmsEffortIndex(levels, effort)]?.description;
-	// 滑块中心与档位点的坐标基准：两端各留 12px（滑块半径），让白色圆钮始终完整
+	// 滑块中心与档位点的坐标基准：两端各留 10px（滑块半径），让白色圆钮始终完整
 	// 落在轨道内。Codex 的轨道两端就是「首/末档」的位置。
-	const thumbLeft = `calc(12px + (100% - 24px) * ${preview / (count - 1)})`;
+	const thumbLeft = `calc(10px + (100% - 20px) * ${preview / (count - 1)})`;
 	const style = { "--dms-thumb-left": thumbLeft } as react.CSSProperties;
 	return (
 		<div

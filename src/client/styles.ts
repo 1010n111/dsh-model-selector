@@ -345,20 +345,22 @@ export const CSS: string = `
 /* 档位读数：拖动时实时跟随 preview，替代此前只有读屏能看到的 aria-valuetext。 */
 .dms-effort-value {
   flex: 0 0 auto;
-  margin-left: 8px;
-  width: 3.6em;
+  /* 紧贴轨道：8px 会在「Max」这类短标签前留出一段空白。 */
+  margin-left: 4px;
+  width: 3.4em;
   color: var(--dsw-static-blue-500, #3b82f6);
   font-size: 11px;
   line-height: 16px;
-  text-align: right;
+  /* 左对齐：短标签紧贴轨道，空白留在框的右端而不是轨道与文字之间。 */
+  text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .dms-effort.is-max .dms-effort-value { color: #8b5cf6; }
 .dms-effort-slider {
-  /* 由组件写入：滑块中心位置（相对轨道），两端各留 12px（滑块半径）。 */
-  --dms-thumb-left: 12px;
+  /* 由组件写入：滑块中心位置（相对轨道），两端各留 10px（滑块半径）。 */
+  --dms-thumb-left: 10px;
   position: relative;
   width: 100%;
   height: 30px;
@@ -425,8 +427,8 @@ export const CSS: string = `
   z-index: 4;
   top: 50%;
   left: var(--dms-thumb-left);
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0,0,0,.35), 0 0 0 .5px rgba(0,0,0,.08);

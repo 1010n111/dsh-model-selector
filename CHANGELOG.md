@@ -6,6 +6,38 @@
 
 本 CHANGELOG 自 0.1.17 起建立并回填：更早的历史以 GitHub Release 与 git tag 为准。
 
+## [0.3.9] - 2026-10-17
+
+### 变更
+
+- **适配 DSH 0.2.1-rc.2**：`@deepseek-ai/dsh-*` peer/dev 依赖由 `^0.2.0-rc.2` 提至
+  `^0.2.1-rc.2`，`@deepseek-ai/cordis` 提至 `~4.0.5`，`@deepseek-ai/schemastery` 提至
+  `^3.18.5`。按 semver 预发布规则，`^0.2.0-rc.2` **不会**匹配 `0.2.1-rc.2`；
+  DSH 对 peer 的强校验会整行禁用不匹配的插件，故必须跟随。
+- **`conversation.input.model.label` 子座位：实测不可采纳，已回滚并记为已知限制**。
+  0.2.1 的官方座位新增该 inline 标签座位，但**官方占用者的注册已经声明了它**；
+  registry 对同一 child key 的第二次声明直接抛
+  `slot "conversation.input.model.label" is already declared`，本插件的 apply 会连带失败
+  （真机浏览器复现）。因此本插件不声明 children、不渲染该座位：接管期间第三方标签贡献
+  不生效，只有切回官方 seat 时才渲染。真机验证后已移除相关代码，并加反向契约测试
+  （座位注册不得出现 `children`、源码不得调用该座位的 `renderSlot`）防止再犯。
+- **跟随官方原语：摆位改用 `useAnchoredPosition`**。0.2.1 的官方 hook 已支持
+  `align: 'end'`（右缘对齐）与浮层自身尺寸监听，正是本菜单需要的语义；删除自研
+  `dmsMenuLeft` 与「root 左缘减法」坐标系转换，菜单改为 `position: fixed` 直接使用
+  视口坐标。选边（上下空间）与两侧高度钳位仍由本插件测量，官方 hook 只负责摆位。
+- **不采用官方 `Menu` 的结论不变**：它把每个条目（含 footer）渲染成
+  `<button role="menuitem">`，装不下搜索框与 effort 滑杆；本次只对齐可复用的原语。
+
+### 测试
+
+- 121 条测试全绿。删除 6 条已无对应实现的 `dmsMenuLeft` 用例，新增 `dmsAboveMaxHeight`
+  与上下钳位对称用例；新增「座位注册不得声明 label children」反向契约钉子，以及
+  `useAnchoredPosition` 的依赖侧前提钉子（align:end / side / ResizeObserver）。
+- 双 program `typecheck` 全绿；`lib/client.js` 已重建（99.1 kB）。
+- **真机验证**：用 `@deepseek-ai/dsh@0.2.1-rc.2` 起临时 web profile 载入本插件，
+  浏览器确认模型 seat 正常渲染、菜单打开/定位/搜索/Escape 关闭可用；该轮同时抓到了
+  label children 冲突（见上）并驱动了回滚。
+
 ## [0.3.8] - 2026-09-29
 
 ### 变更

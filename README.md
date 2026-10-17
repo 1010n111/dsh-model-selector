@@ -17,7 +17,7 @@
 - 替换官方输入区的模型选择 seat（`conversation.input.model`，shadow 方式叠加，不禁用官方组件）
 - 单层模型菜单：名称搜索过滤（命中片段高亮）+ 提供商分组折叠，选中行与供应商标可见高亮，打开自动滚到当前选中行
 - 搜索宽容：大小写、变音符与 `İ`/`café` 这类 Unicode 折叠差异都能命中（NFKD 归一化；高亮只在码位长度不变时标注，不画错位置）
-- 菜单高度按视口实测钳位，弹出方向自适应（取上下空间更大一侧），矮窗口自动收不溢出；seat 右缘放不下时水平钳到视口内
+- 菜单定位走官方 `useAnchoredPosition`（右缘对齐 seat + 视口钳位 + 跟随浮层尺寸变化），弹出方向按上下空间自适应，高度按可用空间收紧，矮窗口不溢出
 - 键盘可完整操作：方向键在结果间移动、搜索框内 Enter 选中首个命中、Escape 先清搜索词再关闭并还原焦点；IME 组合输入的确认键不会被误当成「选中首个命中」
 - 无障碍：搜索框是 combobox（结果列表 listbox / 分组视图 menu）、roving tabindex 只留一个 Tab 停靠点（全折叠时落在组头）、焦点指示与选中态可辨、状态变化经常驻 live region 播报
 - 选中模型后可展开底部内联**推理强度滑杆**，实时显示当前档位名与该档位说明
@@ -57,6 +57,7 @@ dsh plugin --profile <profile> add <path-to-repo>
 ## 已知风险
 
 - 通过 slot 优先级（priority: -1）**shadow 官方 seat**：若官方后续改动该 seat 的注入面（`ModelSelectInjected`），需同步适配；这是官方认可的 slot 叠加机制，并非禁用官方 entry。
+- **已知限制（0.2.1+）**：官方 `conversation.input.model.label` 内联标签子座位由官方占用者声明，registry 不允许同一 child key 二次声明（实测会抛 `already declared` 并让插件 apply 失败）。因此本插件接管期间，第三方注入该标签座位的贡献不会被渲染；只有切回官方 seat 时才生效。这不是可以靠声明 children 解决的问题，属 shadow 语义的固有限制。
 - 与其它也 shadow `conversation.input.model` 的插件同时安装时，优先级决定渲染赢家，可能互相覆盖（本插件优先级 -1 最低，默认胜出）。
 - 遮蔽的**依赖侧**已由 `test/official-seat-shadow.test.mjs` 钉住：官方当前注册该座位时**不声明** `priority`（即默认 0），遮蔽才成立；官方一旦开始声明（尤其 `<= -1`）或把该座位从 single 改成 chain，测试先变红，提示重新评估策略。
 - 若把这个插件提交到第三方商城（如 DSH-Store），其「不动官方组件」条款是最需要解释的一点：本插件走的是官方 slot 的 shadowing 语义（`priority: -1`），**没有**禁用/替换官方 entry，也没有改动任何 `@deepseek-ai/*` 组件本体。

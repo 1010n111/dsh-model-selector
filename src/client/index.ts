@@ -80,6 +80,11 @@ export function apply(ctx: ClientContext): void {
       name: 'conversation.input.model',
       locale: NS,
       priority: SEAT_PRIORITY,
+      // 不要声明 conversation.input.model.label children：官方占用者的注册
+      // 已经声明了它，registry 对同一 child key 的第二次声明直接抛
+      // `slot "…label" is already declared`——本插件的 apply 会连带失败。
+      // 代价：遮蔽期间第三方 label 贡献不会被渲染（官方组件不在场）；
+      // 这是 shadow 语义的固有限制，见 README「已知限制」。
       inject: (sessionId: string): ModelSelectInjected => {
         const sid = sessionId as SessionId
         const directory = models.directoryFor(sid)

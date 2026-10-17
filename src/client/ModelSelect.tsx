@@ -17,11 +17,12 @@ import * as react from 'react'
 import { zh as zhDict, en as enDict } from './locales.ts'
 // Runtime reuse of the official primitives (already an external in
 // tsdown.config.ts and a platform module in the web loader): Toast is the
-// sanctioned surface for a rejected selection, and the two hooks fit/dismiss
-// the open menu. The list itself stays hand-rolled — primitives' Menu renders
-// every entry (footer included) as a <button role="menuitem">, which cannot
-// host the effort range input or the search field.
-import { Toast, IconWarningOutlineRegular, IconChevronDownOutlineRegular, IconCheckOutlineRegular, IconCloseFillRegular, useAnchoredMaxHeight, useDismissOnOutsidePointer } from '@deepseek-ai/dsh-client-ui-primitives'
+// sanctioned surface for a rejected selection, `useAnchoredPosition` places the
+// open menu, and the dismiss hook closes it on an outside pointer. The list
+// itself stays hand-rolled — primitives' Menu renders every entry (footer
+// included) as a <button role="menuitem">, which cannot host the effort range
+// input or the search field.
+import { Toast, IconWarningOutlineRegular, IconChevronDownOutlineRegular, IconCheckOutlineRegular, IconCloseFillRegular, useAnchoredPosition, useDismissOnOutsidePointer } from '@deepseek-ai/dsh-client-ui-primitives'
 
 export { zhDict, enDict }
 // Type-only: official model-selection directory types (the enhanced seat's
@@ -37,7 +38,7 @@ import { useEffortCanvas } from './effortCanvas.ts'
 import { useEffortDrag } from './effortDrag.ts'
 // Menu direction/clamp helpers likewise (pure — the direction flip and the
 // below-clamp are user-visible and were previously only browser-testable).
-import { MENU_MAX_HEIGHT, MENU_VIEWPORT_MARGIN, dmsMenuAbove, dmsBelowMaxHeight, dmsMenuLeft } from './menuFit.ts'
+import { MENU_MAX_HEIGHT, MENU_VIEWPORT_MARGIN, dmsAboveMaxHeight, dmsMenuAbove, dmsBelowMaxHeight } from './menuFit.ts'
 // roving tabindex 的默认落点决策与行键构造（纯函数，node 可测——行键格式必须
 // 与渲染出的 data-row-key 同源，否则默认落点静默失效）。
 import { dmsDefaultRowKey, dmsHeaderKey, dmsRowKey } from './roving.ts'
@@ -509,8 +510,8 @@ interface ModelSelectProps {
 export function ModelSelect({ locked, available, directory, load, select, t }: ModelSelectProps) {
 	const state = react.useSyncExternalStore(directory.subscribe, directory.getSnapshot);
 	const [open, setOpen] = react.useState(false);
-	// 弹出方向自适应：菜单向上弹出（bottom 定位），但 trigger 距视口顶部
-	// 空间不足时（新会话/页面中部）改为向下弹出，避免搜索框与选项溢出视口。
+	// 弹出方向自适应：菜单默认向上弹（官方 hook 的 side: 'top'），但 trigger 距
+	// 视口顶部空间不足时（新会话/页面中部）改为向下弹，避免搜索框与选项溢出视口。
 	const [menuAbove, setMenuAbove] = react.useState(true);
 	const [query, setQuery] = react.useState("");
 	const [collapsed, setCollapsed] = react.useState<Set<string>>(() => new Set());
@@ -626,35 +627,12 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 		}
 	}, [available, load]);
 	// 菜单高度按视口实测钳位（原先 CSS 写死 min(420px, 100vh - 96px)），
-	// composer 变高/窗口变小时自动收，不再溢出。
+	// composer 变高/窗口变小时自动收，不再溢出。方向仍由本组件按 trigger 上下
+	// 空间选边（官方 hook 只负责摆位，不替你选边），两侧共用同一份高度状态。
 	const menuRef = react.useRef<HTMLDivElement | null>(null);
-	// useAnchoredMaxHeight 只适配「底边固定、向上生长」的底部锚定浮层：fit 读的是
-	// 浮层自身底缘与视口顶缘的距离。向下弹（menuAbove=false）时面板改为顶边固定，
-	// hook 度量的底缘是向下弹出后的位置，返回值在渲染处（maxHeight 三目）被忽略——
-	// 继续挂监听只白付测量：每次 scroll/resize 都未节流 getBoundingClientRect +
-	// setState 重渲染。向下弹期间把被测 ref 换成恒 null 的空 ref，hook 的 layout
-	// effect 因 el === null 整体跳过（不注册监听、不测量）；方向翻回向上时 ref 换回
-	// menuRef，effect 因 ref 身份变化重跑并立即 fit——翻向后的钳位是新鲜测量
-	// （原实现 signal 不变不重跑，翻回时用的还是向下弹期间留下的旧值）。
-	const inactiveMenuRef = react.useRef<HTMLDivElement | null>(null);
-	// 第 4 参 margin 显式传本插件的 MENU_VIEWPORT_MARGIN，不依赖官方默认值恰好也是
-	// 12：上游改默认 MARGIN 时隐式依赖会让本菜单的贴边距离静默跟随漂移。
-	// official-seat-shadow.test.mjs 反向钉住两边相等（官方改了会红，届时再决策）。
-	const menuMaxHeight = useAnchoredMaxHeight(menuAbove ? menuRef : inactiveMenuRef, MENU_MAX_HEIGHT, open, MENU_VIEWPORT_MARGIN);
-	const [belowMaxHeight, setBelowMaxHeight] = react.useState(MENU_MAX_HEIGHT);
-	// 为何不采纳官方 useAnchoredPosition（与文件头「不用官方 Menu」并列的第二个不采纳决定）：
-	// 该 hook 的水平起点固定是 anchor 左缘（left = rect.left，仅越界时钳进视口），没有
-	// 「右缘对齐 anchor 右缘」这种模式；而本菜单默认就是右锚定（.dms-menu 的 right:0，与
-	// seat 右缘对齐），只有右侧放不下时才钳到视口内改用 left。方向也不由 hook 决定：
-	// side 是调用方写死的 'top' | 'bottom'，而这里要按 trigger 上下空间自动选边
-	// （dmsMenuAbove）；且 hook 返回的是 fixed 定位坐标，本菜单是 .dms-root 内的
-	// absolute + bottom/right 锚定，采纳它等于同时改默认对齐、方向策略与定位模型——
-	// 属用户可见的运行时行为变更，故保留自研测量。
-	// 水平钳位：seat 右缘放不下整幅菜单（窄窗口）时改为 left 锚定，undefined = 默认右锚定。
-	const [menuLeft, setMenuLeft] = react.useState<number | undefined>(undefined);
-	// 布局生效前测量（对齐 useAnchoredMaxHeight 的 useLayoutEffect 模式）：
-	// 用 useEffect 会在首帧绘制后才翻转方向/水平锚定，向下弹或左夹取场景
-	// 菜单先按默认（向上弹 + 右锚定）画一帧再跳位，肉眼可见闪错位。
+	const [menuMaxHeight, setMenuMaxHeight] = react.useState(MENU_MAX_HEIGHT);
+	// 布局生效前测量：用 useEffect 会在首帧绘制后才翻转方向，向下弹场景菜单
+	// 先按默认方向画一帧再跳位，肉眼可见闪错位。
 	react.useLayoutEffect(() => {
 		if (!open) return;
 		const measure = () => {
@@ -664,20 +642,11 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 			// 取上下两侧中空间更大的一侧：只有上方放不下时才向下弹。
 			// 原先要求上方空出满高（MENU_MAX_HEIGHT + 20），窗口一矮就反而把面板
 			// 挤到视口下沿外面。
-			setMenuAbove(dmsMenuAbove(rect.top, rect.bottom, window.innerHeight));
-			// Downward the panel is top-anchored, so the hook's own fit would feed
-			// back on itself; clamp against the space below the trigger instead.
-			setBelowMaxHeight(dmsBelowMaxHeight(rect.bottom, window.innerHeight, MENU_MAX_HEIGHT));
-			// 水平：菜单实际渲染宽度为准（offsetWidth），右锚定放不下时钳到视口内。
-			// dmsMenuLeft 的入参/返回值都是**视口坐标**，而 .dms-menu 是 .dms-root
-			// （position: relative）内的 absolute 元素 —— left 的参考系是 root 的
-			// padding box。不减去 root 左缘的话，钳位一旦生效菜单整体右移
-			// rootRect.left；横向溢出（rect.right > innerWidth）那一支更会把整幅
-			// 菜单画到屏外，恰是这次钳位要避免的现象。
-			const menuWidth = menuRef.current?.offsetWidth ?? 0;
-			const left = dmsMenuLeft(rect.right, menuWidth, window.innerWidth, MENU_VIEWPORT_MARGIN);
-			const rootLeft = rootRef.current?.getBoundingClientRect().left ?? 0;
-			setMenuLeft(left === undefined ? undefined : left - rootLeft);
+			const above = dmsMenuAbove(rect.top, rect.bottom, window.innerHeight);
+			setMenuAbove(above);
+			setMenuMaxHeight(above
+				? dmsAboveMaxHeight(rect.top, MENU_MAX_HEIGHT)
+				: dmsBelowMaxHeight(rect.bottom, window.innerHeight, MENU_MAX_HEIGHT));
 		};
 		measure();
 		let raf = 0;
@@ -698,6 +667,19 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 			window.removeEventListener("scroll", onViewportChange, { capture: true });
 		};
 	}, [open]);
+	// 官方 0.2.1 的 useAnchoredPosition 已支持 align:'end'（右缘对齐，仅越界时钳进
+	// 视口），并在内部处理 scroll/resize/浮层自身尺寸变化；fixed 视口坐标直接消除了
+	// 旧实现「.dms-root 内 absolute → 必须减去 root 左缘」的坐标系转换与那一类错位。
+	// 0.1.x 时代「hook 只能左缘对齐」的判据在这里正式失效，故改用它而不是继续自研。
+	const menuPos = useAnchoredPosition({
+		open,
+		anchorRef: triggerRef,
+		panelRef: menuRef,
+		side: menuAbove ? 'top' : 'bottom',
+		align: 'end',
+		gap: 8,
+		margin: MENU_VIEWPORT_MARGIN,
+	});
 	react.useEffect(() => {
 		if (!open) return;
 		searchRef.current?.focus();
@@ -1047,8 +1029,12 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 					id={`${id}-menu`}
 					ref={menuRef}
 					style={{
-						maxHeight: menuAbove ? menuMaxHeight : belowMaxHeight,
-						...(menuLeft === undefined ? null : { left: menuLeft, right: "auto" }),
+						left: menuPos?.left ?? 0,
+						top: menuPos?.top ?? 0,
+						maxHeight: menuMaxHeight,
+						// 官方 hook 在同一提交的 layout effect 里写完坐标才允许绘制；
+						// 首帧坐标为 null 时先藏起来，避免从 (0,0) 闪一下。
+						visibility: menuPos === null ? 'hidden' : undefined,
 					}}
 					className={'dms-menu dms-menuModel' + (menuAbove ? '' : ' dms-menuBelow')}
 				>

@@ -309,6 +309,26 @@ test('the composer model seat keeps targeting the shipped conversation.input.mod
   )
 })
 
+test('the seat must NOT declare the 0.2.1 inline label child (official already declares it)', () => {
+  const src = readFileSync(join(root, 'src', 'client', 'index.ts'), 'utf8')
+  const clientSrc = readFileSync(join(root, 'src', 'client', 'ModelSelect.tsx'), 'utf8')
+  // 实测坑（0.2.1-rc.2）：官方占用者的注册已经声明了
+  // `conversation.input.model.label`；registry 对同一 child key 的第二次声明直接抛
+  //   slot "conversation.input.model.label" is already declared (by an entry in "conversation.input.model")
+  // 且本插件的 apply 会连带失败（浏览器里整块插件不生效）。
+  // 因此 shadow 条目**不能**声明 children；代价是遮蔽期间第三方 label 贡献不会被渲染
+  // （官方组件不在场）——这是 shadow 语义的固有限制，写进 README「已知限制」。
+  const injectAt = src.indexOf("scope.slots.inject('conversation.input.model'")
+  assert.notEqual(injectAt, -1, '座位注入消失：先确认 shadow 设计还在')
+  const seat = balancedSlice(src, src.indexOf('{', src.indexOf('slots.register(', injectAt)))
+  assert.doesNotMatch(seat, /children:\s*\{/, '座位注册不得声明 children：与官方重复声明会在运行时抛错')
+  assert.doesNotMatch(
+    clientSrc,
+    /renderSlot\(\s*'conversation\.input\.model\.label'/,
+    '既然不声明 children，就不得调用该座位的 renderSlot（无渲染授权）',
+  )
+})
+
 /**
  * 产物新鲜度（内容级，不看 mtime）。
  *

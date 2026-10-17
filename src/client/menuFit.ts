@@ -2,22 +2,25 @@
  * dsh-model-selector — 菜单弹出方向与高度钳位的纯函数。
  *
  * 从 ModelSelect.tsx 原样搬出（无 JSX、无 DOM、无模块级副作用），以便用
- * node --test 直接跑源码：方向决策（向上 vs 向下弹）和向下弹的高度钳位都是
+ * node --test 直接跑源码：方向决策（向上 vs 向下弹）与两侧的高度钳位都是
  * 用户可见且曾在矮窗口/滚动场景出过 bug 的逻辑，留在 .tsx 里则无法脱离
  * 浏览器测试。
+ *
+ * 横向摆位已交给官方 `useAnchoredPosition`（0.2.1 起支持 `align: 'end'`），
+ * 这里只保留「选边」与「该边可用高度」两件事。
  */
 
-/** 菜单设计最大高度（px）；实际由 useAnchoredMaxHeight 按视口可用空间钳位。
+/** 菜单设计最大高度（px）；实际按 trigger 上方/下方可用空间钳位。
  * 调法：调大允许更高菜单（矮视口下仍会被钳到视口内），调小菜单更矮。 */
 export const MENU_MAX_HEIGHT = 420;
 /** 与视口边缘保留的距离（px）；对齐 primitives 里未导出的 MARGIN。
  *
- * 调用 `useAnchoredMaxHeight` 时**显式传这个值**作为 margin 参数（见
+ * 调用 `useAnchoredPosition` 时**显式传这个值**作为 margin 参数（见
  * ModelSelect.tsx 的调用点），而不是靠官方默认值恰好也是 12 的巧合：上游一旦把
  * 默认 MARGIN 改掉，隐式依赖会让本菜单的贴边距离跟着漂，而菜单自身毫无察觉。
- * `test/official-seat-shadow.test.mjs` 反向钉住「两边仍相等」——官方改了会红，
- * 那时再决定是跟随还是显式分叉。
- * 改动同时影响向上/向下弹与水平钳位的边距，需与官方 MARGIN 意图保持一致。 */
+ * `test/official-seat-shadow.test.mjs` 反向钉住「调用点显式传它」与官方 hook 的
+ * align/side/ResizeObserver 前提——官方收了能力会红，届时再决定跟随还是分叉。
+ * 改动同时影响向上/向下弹与官方 hook 的钳位边距，需与官方 MARGIN 意图保持一致。 */
 export const MENU_VIEWPORT_MARGIN = 12;
 
 /**
@@ -28,28 +31,12 @@ export function dmsMenuAbove(triggerTop: number, triggerBottom: number, viewport
   return triggerTop >= viewportHeight - triggerBottom;
 }
 
-/** 向下弹时按 trigger 下方空间钳位菜单高度（top-anchored，不能复用向上弹的 fit）。 */
-export function dmsBelowMaxHeight(triggerBottom: number, viewportHeight: number, cap: number): number {
-  return Math.max(0, Math.min(cap, viewportHeight - triggerBottom - MENU_VIEWPORT_MARGIN));
+/** 向上弹时按 trigger 上方空间钳位菜单高度（bottom-anchored，不能复用向下弹的公式）。 */
+export function dmsAboveMaxHeight(triggerTop: number, cap: number): number {
+  return Math.max(0, Math.min(cap, triggerTop - MENU_VIEWPORT_MARGIN));
 }
 
-/**
- * 菜单水平钳位：默认右锚定（right:0，与 seat 右缘对齐）；seat 右缘左侧放不下
- * 整幅菜单（seat 靠输入区左下 + 窄窗口）、或 seat 右缘本身已越出视口右缘
- * （页面横向溢出/缩放时 rect.right 可大于 innerWidth，右锚定会把整幅菜单
- * 拖出屏外）时，返回钳到视口内的 left 值，调用方改用 left 锚定。
- * 返回 undefined 表示保持默认右锚定。
- * menuWidth 传菜单实际渲染宽度（offsetWidth），与 CSS `min(280px, 100vw-32px)` 解耦。
- *
- * **坐标系**：入参与返回值都是**视口坐标**。菜单是 .dms-root（position:
- * relative）内的 absolute 元素，left 的参考系是 root 的 padding box —— 调用方
- * 必须减去 root 的左缘再写进 style.left，否则窄窗口下菜单整体右移、横向溢出
- * 时整幅画到屏外。
- */
-export function dmsMenuLeft(rootRight: number, menuWidth: number, viewportWidth: number, margin: number): number | undefined {
-  if (rootRight - menuWidth >= margin && rootRight <= viewportWidth - margin) return void 0;
-  return Math.min(
-    Math.max(margin, rootRight - menuWidth),
-    Math.max(margin, viewportWidth - margin - menuWidth),
-  );
+/** 向下弹时按 trigger 下方空间钳位菜单高度（top-anchored，不能复用向上弹的公式）。 */
+export function dmsBelowMaxHeight(triggerBottom: number, viewportHeight: number, cap: number): number {
+  return Math.max(0, Math.min(cap, viewportHeight - triggerBottom - MENU_VIEWPORT_MARGIN));
 }

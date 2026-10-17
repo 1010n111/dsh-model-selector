@@ -85,9 +85,9 @@ export const CSS: string = `
 .dms-model-check svg { display: block; }
 
 .dms-menu {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 8px);
+  /* 官方 useAnchoredPosition 返回视口坐标：fixed 定位让它不再依赖 .dms-root
+     的 padding box，免去 root 左缘减法那一层坐标系转换。 */
+  position: fixed;
   z-index: 20;
   display: flex;
   flex-direction: column;
@@ -106,8 +106,6 @@ export const CSS: string = `
 }
 .dms-menuModel { border-right: none; }
 .dms-menuBelow {
-  bottom: auto;
-  top: calc(100% + 8px);
   animation-name: dms-menu-in-below;
 }
 

@@ -17,7 +17,6 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { MENU_VIEWPORT_MARGIN } from '../src/client/menuFit.ts'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const OFFICIAL_PRIMITIVES = join(
@@ -140,53 +139,30 @@ test('官方 ui-conversation 仍把 conversation.input.model 声明为 single/se
 })
 
 /**
- * 视口边距的**依赖侧**钉子：本菜单的 MENU_VIEWPORT_MARGIN 对齐官方
- * `useAnchoredMaxHeight` 里未导出的 `MARGIN`（primitives/lib/index.js）。
- * 这条断言把「边距一致」从源码注释声称变成可执行判据：官方哪天改 MARGIN，
- * 本菜单与官方 Menu 的贴边距离就会漂移（一边 12px 一边 N px），视觉不一致。
- * 变红时：同步 menuFit.ts 的 MENU_VIEWPORT_MARGIN，并复核 menu-fit.test.mjs。
+ * 摆位原语的**依赖侧**钉子：0.2.1 起官方 `useAnchoredPosition` 支持
+ * `align: 'end'`（右缘对齐）、`side: 'top' | 'bottom'`，并在内部监听自身尺寸变化。
+ * 这三条正是本插件把自研测量换成官方 hook 的前提；官方哪天收窄 API，右缘对齐或
+ * 菜单跟随就会静默失效。变红时：回到官方源码重新评估摆位方案，别改断言糊过去。
  */
-test('视口边距: MENU_VIEWPORT_MARGIN 与官方 useAnchoredMaxHeight 的 MARGIN 一致', () => {
+test('依赖侧前提：官方 useAnchoredPosition 仍支持 align:end / side / 自身尺寸变化', () => {
   assert.ok(
     existsSync(OFFICIAL_PRIMITIVES),
     `找不到官方 primitives 产物 ${OFFICIAL_PRIMITIVES}：先按 dsh-plugins 契约安装依赖`,
   )
   const bundle = readFileSync(OFFICIAL_PRIMITIVES, 'utf8')
-  // MARGIN 声明紧贴在 useAnchoredMaxHeight 上方（两者同在
-  // lib/types/useAnchoredMaxHeight.js region）。
-  //
-  // 定位方式刻意**不用固定字符窗口**：窗口是对第三方 bundle 排版（import 数量、注释
-  // 长短）的脆弱耦合——上游任何一次无关重排都会让窗口不够 → 测试红，而报错信息会
-  // 误导成「成本契约变了」。改为「函数名之前最后一个 MARGIN 声明」：哪个 region 的
-  // 常量排在前面不影响结果，只有「声明被删/改名/移到函数之后」才该红。
-  const regionAt = bundle.indexOf('function useAnchoredMaxHeight')
-  assert.notEqual(regionAt, -1, '官方 primitives 里找不到 useAnchoredMaxHeight：边距判据需重新取证')
-  const before = bundle.slice(0, regionAt)
-  const declarations = [...before.matchAll(/const\s+MARGIN\s*=\s*(\d+)/g)]
-  assert.ok(
-    declarations.length > 0,
-    '官方 primitives 里 useAnchoredMaxHeight 之前找不到 MARGIN 声明：边距判据需重新取证',
-  )
-  // 只认紧邻的那一个：取最后一个（最接近函数体）。同时确认函数体里确实引用了它，
-  // 否则「函数被重排到别处」时这条钉子会静默失效。
-  const matched = declarations[declarations.length - 1]
+  const regionAt = bundle.indexOf('function useAnchoredPosition')
+  assert.notEqual(regionAt, -1, '官方 primitives 里找不到 useAnchoredPosition：采纳前提需重新取证')
   const body = bundle.slice(regionAt, bundle.indexOf('\n}', regionAt))
-  assert.match(body, /\bMARGIN\b/, 'useAnchoredMaxHeight 函数体不再引用 MARGIN：边距判据需重新取证')
-  assert.equal(
-    MENU_VIEWPORT_MARGIN,
-    Number(matched[1]),
-    `官方 MARGIN 已变为 ${matched[1]}：同步 menuFit.ts 的 MENU_VIEWPORT_MARGIN`,
-  )
+  assert.match(body, /align\s*===\s*"end"/, '官方 hook 不再支持 align:end：本菜单的右缘对齐会失效')
+  assert.match(body, /side\s*===\s*"top"/, '官方 hook 不再支持 side:top：菜单翻向逻辑会失效')
+  assert.match(body, /ResizeObserver/, '官方 hook 不再监听浮层自身尺寸：菜单高度变化后钳位会过期')
 })
 
-test('margin 依赖是显式的：调用点传 MENU_VIEWPORT_MARGIN，不靠官方默认值巧合', () => {
-  // 这条钉的是「显式」本身：上游 0.1.7 给 useAnchoredMaxHeight 加了第 4 个可选参
-  // margin（默认 MARGIN=12），插件不传也能跑，但那是隐式巧合——上游改默认值，
-  // 本菜单贴边距离会静默跟着漂，而插件毫无察觉。传自己的常量把依赖变成显式的。
+test('调用点显式传 align:end 与 MENU_VIEWPORT_MARGIN，不靠官方默认值巧合', () => {
+  // 显式传 margin 的理由同旧版：上游改默认贴边距离时，本菜单不能静默跟着漂。
+  // align:end 也钉住——不写就会退回官方默认的 start（左缘对齐），属用户可见回归。
   const source = readFileSync(join(root, 'src', 'client', 'ModelSelect.tsx'), 'utf8')
-  assert.match(
-    source,
-    /useAnchoredMaxHeight\([^)]*MENU_VIEWPORT_MARGIN\)/,
-    '调用点必须显式传 MENU_VIEWPORT_MARGIN 作为第 4 参（不得依赖官方默认 margin）',
-  )
+  assert.match(source, /useAnchoredPosition\(\{[\s\S]*?align:\s*'end'/, '调用点必须显式声明 align:\'end\'')
+  assert.match(source, /useAnchoredPosition\(\{[\s\S]*?margin:\s*MENU_VIEWPORT_MARGIN/, '调用点必须显式传 MENU_VIEWPORT_MARGIN')
+  assert.match(source, /side:\s*menuAbove\s*\?\s*'top'\s*:\s*'bottom'/, 'side 必须按 trigger 上下空间选边')
 })

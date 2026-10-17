@@ -45,6 +45,12 @@
   effort 提交会替换 current 对象（同 provider/model、新的 reasoningEffort），
   于是每次松手都会重跑 `scrollSelectedIntoView` 再滚一次。依赖收窄为
   `state.current?.provider` / `.model`，纯 effort 提交不再触发列表滚动。
+- **停下时列表上下跳的根因修复（录屏定位）**：打开菜单期间仍有一个自动加载 effect，
+  它依赖注入 face 的 `load`——该函数每次 store 更新都会重建，于是每次提交都重跑、
+  把目录 status 打进 `loading`；菜单顶部的状态条让菜单长高约 20px，fixed 菜单是
+  向上锚定的，高度一变顶边就位移，列表看起来“跳下再跳上”。现在打开期间不再自动
+  重载（打开时的加载由 `show()` 负责），`load` 改走 ref 消除身份抖动，并跳过
+  `selecting`/`pending` 状态。
 - **刷新后位置跳变修复**：`.dms-effort-slider` 的 `flex-basis: 0` 在轨道里会被读成
   `主尺寸 0` 导致宽度不生长，导致刚打开/每次重渲染后滑块回跳到轨道起点。改为
   `flex: 1 1 auto` + `min-width: 0`。

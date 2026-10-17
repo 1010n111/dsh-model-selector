@@ -540,6 +540,10 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 	const triggerRef = react.useRef<HTMLButtonElement | null>(null);
 	const searchRef = react.useRef<HTMLInputElement | null>(null);
 	const lastLoadRef = react.useRef(0);
+	// 注入 face 每次 store 更新都会重建 load 引用；用 ref 挡住身份抖动，
+	// effect 只按 available/open 语义触发。
+	const loadRef = react.useRef(load);
+	loadRef.current = load;
 	const id = react.useId();
 	// 模型目录稳定时，haystack 索引不随 select/状态抖动重建：仅在 groups 引用
 	// 真正变化（新 load 结果）时重建 400+ 条搜索索引。useMemo 保证 group 引用
@@ -616,15 +620,17 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 		load();
 	}, [load]);
 	react.useEffect(() => {
-		if (available) {
-			// 目录新鲜度守卫：inject 重跑会重建 load 引用触发本 effect，30s 内已有
-			// 有效目录时不重复全量 load（show() 打开路径已有同款守卫）。
-			if (Date.now() - lastLoadRef.current < DIRECTORY_STALE_MS && state.status === "ready" && state.groups.length > 0) return;
-			lastActionRef.current = "load";
-			lastLoadRef.current = Date.now();
-			load();
-		}
-	}, [available, load]);
+		// 打开期间不自动重载：打开时的加载由 show() 负责。否则每次提交都会因
+		// inject 重建 load 引用重跑本 effect，把 status 打进 loading——菜单顶部的
+		// 状态条撑高菜单，fixed 菜单重新锚定，列表整块上下跳（录屏实测）。
+		if (!available || open) return;
+		if (state.status === "selecting" || state.pending !== null) return;
+		// 目录新鲜度守卫：30s 内已有有效目录时不重复全量 load。
+		if (Date.now() - lastLoadRef.current < DIRECTORY_STALE_MS && state.status === "ready" && state.groups.length > 0) return;
+		lastActionRef.current = "load";
+		lastLoadRef.current = Date.now();
+		loadRef.current();
+	}, [available, open, state.status, state.pending, state.groups.length]);
 	// 菜单高度按视口实测钳位（原先 CSS 写死 min(420px, 100vh - 96px)），
 	// composer 变高/窗口变小时自动收，不再溢出。方向仍由本组件按 trigger 上下
 	// 空间选边（官方 hook 只负责摆位，不替你选边），两侧共用同一份高度状态。

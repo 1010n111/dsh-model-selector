@@ -117,7 +117,6 @@ export const CSS: string = `
    40-100px 全部占完后 .dms-groups 的可视高度趋近 0，而 .dms-menu 是
    overflow:hidden —— 用户看到错误条却看不到也滚不到任何模型行。
    现在给它们统一的上限（相对菜单高度）+ overflow，最坏情况是栏内自己滚动。 */
-.dms-status,
 .dms-empty {
   flex: 0 1 auto;
   min-height: 0;
@@ -129,13 +128,34 @@ export const CSS: string = `
   line-height: 20px;
 }
 
+/* 顶部状态条改成浮层：加载/错误提示出现或消失时不再改变菜单高度。
+   菜单是向上锚定的，高度一变顶边就位移，列表会整块上下跳（桌面 App 录屏实测）。 */
+.dms-status {
+  position: absolute;
+  z-index: 7;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--dsw-specific-menu);
+  box-shadow: var(--dsw-shadow-lv3);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
 .dms-more {
-  flex: 0 1 auto;
-  min-height: 0;
+  position: absolute;
+  z-index: 7;
+  left: 4px;
+  right: 4px;
+  bottom: 46px;
   max-height: 20%;
   overflow-y: auto;
   padding: 8px 12px;
-  border-top: 1px solid var(--dsw-alias-border-l1, transparent);
+  border-radius: 8px;
+  background: var(--dsw-specific-menu);
   color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
   line-height: 18px;
@@ -144,23 +164,29 @@ export const CSS: string = `
 /* Provider-load failure strip: capped and scrollable so a long list of failed
    groups can never squeeze the model list out of the menu (E4). */
 .dms-failures {
-  flex: 0 1 auto;
+  position: absolute;
+  z-index: 7;
+  top: 4px;
+  left: 4px;
+  right: 4px;
   max-height: min(96px, 30%);
-  min-height: 0;
   overflow-y: auto;
+  border-radius: 8px;
 }
 
 .dms-error,
 .dms-warning {
-  flex: 0 1 auto;
-  min-height: 0;
+  position: absolute;
+  z-index: 7;
+  top: 4px;
+  left: 4px;
+  right: 4px;
   max-height: 40%;
   overflow-y: auto;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 4px;
   padding: 7px 8px;
   border-radius: 8px;
   background: var(--dsw-alias-interactive-bg-hover-danger);
@@ -168,6 +194,7 @@ export const CSS: string = `
   font-size: 12px;
   line-height: 18px;
 }
+.dms-warning { position: static; }
 .dms-warning {
   background: var(--dsw-alias-bg-module-platform);
   color: var(--dsw-alias-state-warn-label);
@@ -287,8 +314,11 @@ export const CSS: string = `
   font-weight: 500;
 }
 .dms-notice {
-  flex: 0 0 auto;
-  margin: 4px 0 0;
+  position: absolute;
+  z-index: 7;
+  left: 4px;
+  right: 4px;
+  bottom: 46px;
   padding: 6px 10px;
   border-radius: 8px;
   background: var(--dsw-alias-interactive-bg-hover);

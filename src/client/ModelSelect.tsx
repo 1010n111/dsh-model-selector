@@ -104,7 +104,7 @@ export const EffortSlider = react.memo(function EffortSlider({ state, select, t,
 	const stateRef = react.useRef(state);
 	stateRef.current = state;
 	const particlesRef = react.useRef<HTMLCanvasElement | null>(null);
-	const inputRef = react.useRef<HTMLInputElement | null>(null);
+	const inputRef = react.useRef<HTMLDivElement | null>(null);
 	const committedRef = react.useRef("");
 	const committingRef = react.useRef(false);
 	const previewRef = react.useRef(0);
@@ -306,12 +306,12 @@ export const EffortSlider = react.memo(function EffortSlider({ state, select, t,
 		draggingRef,
 	});
 	const { dragging } = drag;
-	// 拖动态同步到辐射状态与画布（preview effect 已处理 target，这里只切 dragging 速度）。
+	// preview 同步到 ref：键盘/迟到 settle 判定读最新值，不依赖闭包。
 	react.useEffect(() => {
 		previewRef.current = preview;
 	}, [preview]);
-	const onKeyDown = (event: react.KeyboardEvent<HTMLInputElement>): void => {
-		const current = dmsClampIndex(Number(event.currentTarget.value), levels.length);
+	const onKeyDown = (event: react.KeyboardEvent<HTMLElement>): void => {
+		const current = dmsClampIndex(preview, levels.length);
 		let target;
 		if (event.key === "ArrowLeft" || event.key === "ArrowDown" || event.key === "PageDown") {
 			target = Math.max(0, current - 1);
@@ -323,8 +323,8 @@ export const EffortSlider = react.memo(function EffortSlider({ state, select, t,
 			target = levels.length - 1;
 		}
 		if (target === void 0) return;
-		// 忙态（自身提交中/共享目录 select 在途）吞掉按键：必须先 preventDefault，
-		// 否则 range input 的原生步进会改 DOM value，与受控值漂移。
+		// 忙态（自身提交中/共享目录 select 在途）吞掉按键；preventDefault 同时
+		// 阻止方向键滚动菜单。
 		event.preventDefault();
 		if (busy) return;
 		void commit(target);
@@ -357,21 +357,20 @@ export const EffortSlider = react.memo(function EffortSlider({ state, select, t,
 						/>
 					))}
 				</div>
-				<input
+				{/* 自定义 slider：不用原生 <input type=range>。原生控件被按下/聚焦时由
+				    Chromium 的原生绘制层画焦点环与滑块，即使 opacity:0 也会在深色菜单上
+				    闪一帧白色（桌面 App 实测）；div + role=slider 完全走 CSS 绘制。 */}
+				<div
 					ref={inputRef}
 					className="dms-effort-input"
-					type="range"
-					min="0"
-					max={count - 1}
-					step="0.01"
-					value={preview}
-					aria-disabled={busy}
+					role="slider"
+					tabIndex={busy ? -1 : 0}
 					aria-label={t("menu.effort")}
+					aria-valuemin={0}
+					aria-valuemax={count - 1}
+					aria-valuenow={Math.round(preview * 100) / 100}
 					aria-valuetext={effortName}
-					onChange={(event: react.ChangeEvent<HTMLInputElement>) => {
-						const raw = Number(event.currentTarget.value);
-						showPointerPreview(raw);
-					}}
+					aria-disabled={busy}
 					onPointerDown={drag.handlers.onPointerDown}
 					onPointerMove={drag.handlers.onPointerMove}
 					onPointerUp={drag.handlers.onPointerUp}

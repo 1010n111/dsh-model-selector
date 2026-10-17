@@ -24,6 +24,10 @@
 - **布局稳定性修复**：去掉档位说明行（改挂 value 的 `title`），`.dms-effort` 行高
   固定 32px、不换行，档位名固定 3.6em 宽并单行省略。此前不同档位的说明文字长短
   不同会换行撑高整行，菜单随内容重新测量，滑杆上下跳动。
+- **拖动闪白修复**：把原生 `<input type="range">` 换成 `role="slider"` 的 div
+  （复用 effortDrag 的指针状态机，键盘/ARIA 保持）。原生 range 被按下/聚焦时由
+  Chromium 的原生绘制层画焦点环与滑块，即使 `opacity:0` 也会在 Electron 深色菜单上
+  闪一帧白色；`focus()` 同时改为 `{ preventScroll: true }`，避免聚焦滚动触发重绘。
 
 ### 测试
 

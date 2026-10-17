@@ -9,10 +9,10 @@
  */
 import * as react from 'react';
 export interface EffortDragHandlers {
-    onPointerDown: (event: react.PointerEvent<HTMLInputElement>) => void;
-    onPointerMove: (event: react.PointerEvent<HTMLInputElement>) => void;
-    onPointerUp: (event: react.PointerEvent<HTMLInputElement>) => void;
-    onPointerCancel: (event: react.PointerEvent<HTMLInputElement>) => void;
+    onPointerDown: (event: react.PointerEvent<HTMLElement>) => void;
+    onPointerMove: (event: react.PointerEvent<HTMLElement>) => void;
+    onPointerUp: (event: react.PointerEvent<HTMLElement>) => void;
+    onPointerCancel: (event: react.PointerEvent<HTMLElement>) => void;
     onBlur: () => void;
 }
 export interface UseEffortDragOptions {
@@ -26,7 +26,7 @@ export interface UseEffortDragOptions {
     onCommit: (raw: number) => void;
     /** 取消（pointercancel / 触控失控）时回滚到已提交档，不提交。 */
     onRollback: () => void;
-    inputRef: react.RefObject<HTMLInputElement | null>;
+    inputRef: react.RefObject<HTMLElement | null>;
     /** 拖动活状态（true = 指针按下未结束）。组件与 hook 共享同一 ref：
      *  组件侧用它守卫「拖动态不被打断」（commit 迟到采纳判定、目录同步 effect）。 */
     draggingRef: react.MutableRefObject<boolean>;

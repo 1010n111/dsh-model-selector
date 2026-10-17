@@ -395,15 +395,22 @@ export const CSS: string = `
   pointer-events: none;
 }
 .dms-effort-input {
+  /* 自定义 slider 的命中层：透明 div，不参与绘制（原生 range 的白色焦点环问题
+     见 ModelSelect.tsx 的说明）。 */
   position: absolute;
   z-index: 5;
   inset: -5px 0;
   width: 100%;
   height: calc(100% + 10px);
   margin: 0;
-  opacity: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
   cursor: grab;
   touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .dms-effort-input:active { cursor: grabbing; }
 .dms-effort-input:focus-visible + .dms-effort-knob {

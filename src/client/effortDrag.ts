@@ -11,10 +11,10 @@ import * as react from 'react'
 import { dmsIsActiveDrag, dmsPointerRaw } from './effort.ts'
 
 export interface EffortDragHandlers {
-  onPointerDown: (event: react.PointerEvent<HTMLInputElement>) => void
-  onPointerMove: (event: react.PointerEvent<HTMLInputElement>) => void
-  onPointerUp: (event: react.PointerEvent<HTMLInputElement>) => void
-  onPointerCancel: (event: react.PointerEvent<HTMLInputElement>) => void
+  onPointerDown: (event: react.PointerEvent<HTMLElement>) => void
+  onPointerMove: (event: react.PointerEvent<HTMLElement>) => void
+  onPointerUp: (event: react.PointerEvent<HTMLElement>) => void
+  onPointerCancel: (event: react.PointerEvent<HTMLElement>) => void
   onBlur: () => void
 }
 
@@ -29,7 +29,7 @@ export interface UseEffortDragOptions {
   onCommit: (raw: number) => void
   /** 取消（pointercancel / 触控失控）时回滚到已提交档，不提交。 */
   onRollback: () => void
-  inputRef: react.RefObject<HTMLInputElement | null>
+  inputRef: react.RefObject<HTMLElement | null>
   /** 拖动活状态（true = 指针按下未结束）。组件与 hook 共享同一 ref：
    *  组件侧用它守卫「拖动态不被打断」（commit 迟到采纳判定、目录同步 effect）。 */
   draggingRef: react.MutableRefObject<boolean>
@@ -39,7 +39,7 @@ export interface UseEffortDragOptions {
  * 拖动中由 pointerId 校验的几何换算：raw = (clientX - left) / width 映射到档位区间。
  * 输入条退化（宽度 ≤ 0 / 档位数 < 2）时返回 fallback（当前值，不跳档）。
  */
-function rawFromPointer(input: HTMLInputElement, clientX: number, levelCount: number, fallback: number): number {
+function rawFromPointer(input: HTMLElement, clientX: number, levelCount: number, fallback: number): number {
   const bounds = input.getBoundingClientRect();
   return dmsPointerRaw(clientX, bounds.left, bounds.width, levelCount, fallback);
 }
@@ -54,13 +54,13 @@ export function useEffortDrag({ levelCount, canStart, onPreview, onCommit, onRol
   const callbacksRef = react.useRef({ levelCount, canStart, onPreview, onCommit, onRollback });
   callbacksRef.current = { levelCount, canStart, onPreview, onCommit, onRollback };
 
-  const showPointerPreview = react.useCallback((input: HTMLInputElement, clientX: number): void => {
+  const showPointerPreview = react.useCallback((input: HTMLElement, clientX: number): void => {
     const raw = rawFromPointer(input, clientX, callbacksRef.current.levelCount(), lastRawRef.current);
     lastRawRef.current = raw;
     callbacksRef.current.onPreview(raw);
   }, []);
 
-  const beginDragging = react.useCallback((input: HTMLInputElement, pointerId: number, clientX: number): void => {
+  const beginDragging = react.useCallback((input: HTMLElement, pointerId: number, clientX: number): void => {
     pointerActiveRef.current = true;
     activePointerIdRef.current = pointerId;
     draggingRef.current = true;
@@ -77,12 +77,12 @@ export function useEffortDrag({ levelCount, canStart, onPreview, onCommit, onRol
     }
   }, [showPointerPreview]);
 
-  const moveDragging = react.useCallback((input: HTMLInputElement, pointerId: number, clientX: number): void => {
+  const moveDragging = react.useCallback((input: HTMLElement, pointerId: number, clientX: number): void => {
     if (!pointerActiveRef.current || activePointerIdRef.current !== pointerId) return;
     showPointerPreview(input, clientX);
   }, [showPointerPreview]);
 
-  const stopDragging = react.useCallback((input: HTMLInputElement, pointerId?: number, clientX?: number): void => {
+  const stopDragging = react.useCallback((input: HTMLElement, pointerId?: number, clientX?: number): void => {
     if (!dmsIsActiveDrag(pointerActiveRef.current, activePointerIdRef.current, pointerId)) return;
     const raw = clientX === void 0 ? lastRawRef.current : rawFromPointer(input, clientX, callbacksRef.current.levelCount(), lastRawRef.current);
     lastRawRef.current = raw;
@@ -144,17 +144,17 @@ export function useEffortDrag({ levelCount, canStart, onPreview, onCommit, onRol
   }, [dragging]);
 
   const handlers: EffortDragHandlers = {
-    onPointerDown: (event: react.PointerEvent<HTMLInputElement>) => {
+    onPointerDown: (event: react.PointerEvent<HTMLElement>) => {
       // 忙态（模型切换/提交在途）不开新拖拽：目录 select 是
       // last-writer-wins，交错的 effort RPC 会打到旧模型上。
       if (!callbacksRef.current.canStart()) return;
       event.preventDefault();
-      event.currentTarget.focus();
+      event.currentTarget.focus({ preventScroll: true });
       beginDragging(event.currentTarget, event.pointerId, event.clientX);
     },
-    onPointerMove: (event: react.PointerEvent<HTMLInputElement>) => moveDragging(event.currentTarget, event.pointerId, event.clientX),
-    onPointerUp: (event: react.PointerEvent<HTMLInputElement>) => stopDragging(event.currentTarget, event.pointerId, event.clientX),
-    onPointerCancel: (event: react.PointerEvent<HTMLInputElement>) => {
+    onPointerMove: (event: react.PointerEvent<HTMLElement>) => moveDragging(event.currentTarget, event.pointerId, event.clientX),
+    onPointerUp: (event: react.PointerEvent<HTMLElement>) => stopDragging(event.currentTarget, event.pointerId, event.clientX),
+    onPointerCancel: (event: react.PointerEvent<HTMLElement>) => {
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }

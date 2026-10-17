@@ -37,11 +37,14 @@ export function useMaxParticles(
   active: boolean,
 ): void {
   react.useEffect(() => {
-    if (!active) return
+    // canvas 常驻（跳档不重建 DOM）；非最高档时清空上一档残留的粒子像素即可。
     const canvas = ref.current
-    if (canvas === null) return
-    const context = canvas.getContext('2d')
-    if (context === null) return
+    const context = canvas?.getContext('2d') ?? null
+    if (canvas === null || context === null) return
+    if (!active) {
+      context.clearRect(0, 0, canvas.width, canvas.height)
+      return
+    }
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let frame = 0

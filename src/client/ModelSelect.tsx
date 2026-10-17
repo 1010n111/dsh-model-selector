@@ -140,6 +140,9 @@ export const EffortSlider = react.memo(function EffortSlider({ state, select, t,
 	}, [preview]);
 	// 最高档才跑粒子：预览到达最后一档即亮（拖动中途贴近也会亮），离开立刻停。
 	const isMax = levels.length >= 2 && preview >= levels.length - 1 - 1e-6;
+	// 粒子 canvas 常驻挂载、由 hook 按 active 启停：跳档瞬间若新增/移除 canvas，
+	// 会在松手那一帧重建合成层（实机表现为菜单闪一下白）。hook 内 active=false
+	// 时直接清空并卸载 rAF，不绘制任何东西。
 	useMaxParticles(particlesRef, isMax);
 	// 卸载清理：迟到的 select settle 不再 setState（迟到成功采纳/超时回滚的
 	// setState 都经 mountedRef 守卫）；未决的超时定时器直接清除——组件已卸载，
@@ -347,7 +350,7 @@ export const EffortSlider = react.memo(function EffortSlider({ state, select, t,
 			>
 				<div className="dms-effort-track" aria-hidden="true">
 					<div className="dms-effort-fill">
-						{isMax ? <canvas ref={particlesRef} className="dms-effort-particles" /> : null}
+						<canvas ref={particlesRef} className="dms-effort-particles" />
 					</div>
 					{levels.map((level, index) => (
 						<span

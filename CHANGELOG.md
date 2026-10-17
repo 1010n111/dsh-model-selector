@@ -28,6 +28,13 @@
   （复用 effortDrag 的指针状态机，键盘/ARIA 保持）。原生 range 被按下/聚焦时由
   Chromium 的原生绘制层画焦点环与滑块，即使 `opacity:0` 也会在 Electron 深色菜单上
   闪一帧白色；`focus()` 同时改为 `{ preventScroll: true }`，避免聚焦滚动触发重绘。
+- **松手瞬间闪白修复**：跳档那一刻有三件事挤在同一帧——`is-busy` 给整行加 `opacity`
+  （整行新建合成层）、最高档上下时 canvas 节点增删（重建合成层）、渐变 `background`
+  过渡的中间帧。现在粒子 canvas 常驻（非最高档只 clear）、忙态只压轨道与读数、
+  不再过渡 background，并给滑块加常驻 `translateZ(0)` 合成层。
+- **刷新后位置跳变修复**：`.dms-effort-slider` 的 `flex-basis: 0` 在轨道里会被读成
+  `主尺寸 0` 导致宽度不生长，导致刚打开/每次重渲染后滑块回跳到轨道起点。改为
+  `flex: 1 1 auto` + `min-width: 0`。
 
 ### 测试
 

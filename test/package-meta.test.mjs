@@ -67,9 +67,13 @@ test('the client bundle is built and loadable', () => {
 test('runtime externals are exactly react plus official primitives', () => {
   const externals = [...bundle.matchAll(/\brequire\("([^"]+)"\)/g)].map((m) => m[1]).sort()
   // Adding an official module here is an admission-review event, not a refactor.
+  // react-dom: the menu is portaled to document.body (official ModelSelect does the
+  // same); react-dom is already a declared peer and is a platform external in the
+  // web loader.
   assert.deepEqual(externals, [
     '@deepseek-ai/dsh-client-ui-primitives',
     'react',
+    'react-dom',
     'react/jsx-runtime',
   ])
 })

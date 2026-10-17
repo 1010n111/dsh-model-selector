@@ -22,7 +22,8 @@ import { zh as zhDict, en as enDict } from './locales.ts'
 // itself stays hand-rolled — primitives' Menu renders every entry (footer
 // included) as a <button role="menuitem">, which cannot host the effort range
 // input or the search field.
-import { Toast, IconWarningOutlineRegular, IconChevronDownOutlineRegular, IconCheckOutlineRegular, IconCloseFillRegular, useAnchoredPosition, useDismissOnOutsidePointer } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Toast, IconWarningOutlineRegular, IconChevronDownOutlineRegular, IconCheckOutlineRegular, IconCloseFillRegular, useAnchoredPosition } from '@deepseek-ai/dsh-client-ui-primitives'
+import { createPortal } from 'react-dom'
 
 export { zhDict, enDict }
 // Type-only: official model-selection directory types (the enhanced seat's
@@ -799,7 +800,19 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 	const dismissOnOutsidePointer = react.useCallback(() => {
 		close(true);
 	}, [close]);
-	useDismissOnOutsidePointer(rootRef, open, dismissOnOutsidePointer);
+	// 菜单 portal 到 body 后不在 rootRef 子树里：外部点击判定必须同时检查菜单。
+	react.useEffect(() => {
+		if (!open) return;
+		const onPointerDown = (event: PointerEvent): void => {
+			const target = event.target;
+			if (!(target instanceof Node)) return;
+			if (rootRef.current?.contains(target) === true) return;
+			if (menuRef.current?.contains(target) === true) return;
+			dismissOnOutsidePointer();
+		};
+		document.addEventListener("pointerdown", onPointerDown, true);
+		return () => document.removeEventListener("pointerdown", onPointerDown, true);
+	}, [open, dismissOnOutsidePointer]);
 	// locked 翻转（会话移除/失活/页面 inert 等）时若菜单还开着直接关闭：
 	// trigger 已禁用，挂着的菜单没有可交互入口；close(true) 顺带清掉搜索词与
 	// notice，并把焦点从即将卸载的菜单里接出来（focusTrigger 因 trigger disabled
@@ -963,7 +976,7 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 	const onBlur = (event: react.FocusEvent<HTMLDivElement>): void => {
 		const related = event.relatedTarget;
 		// 焦点仍在 root 内（菜单、搜索框、滑杆、root 自身）：不关。
-		if (related instanceof Node && rootRef.current?.contains(related) === true) return;
+		if (related instanceof Node && (rootRef.current?.contains(related) === true || menuRef.current?.contains(related) === true)) return;
 		// 焦点落到 root 外的可聚焦元素（Tab 出去）：关。不再豁免 busy —— 否则在途
 		// 选择期间会留下「焦点已在菜单外、Escape 也关不掉」的悬挂菜单（keydown
 		// 不再冒泡到 root），而菜单外的点击本就有 outside-pointer 路径兜底。
@@ -1045,10 +1058,11 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 					{IconChevronDown}
 				</span>
 			</button>
-			{open ? (
+			{open ? createPortal((
 				<div
 					id={`${id}-menu`}
 					ref={menuRef}
+					onKeyDown={onRootKeyDown}
 					style={{
 						// 交互期间连位置一起冻结：锚点/视口变化也不会带着菜单走。
 						left: (lockedPos ?? menuPos)?.left ?? 0,
@@ -1237,7 +1251,7 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 					    在各 AT 上不可靠，「已是当前模型」这类反馈只有这一条通道。 */}
 					<div className="dms-notice" role="status">{notice ?? ''}</div>
 				</div>
-			) : null}
+			), document.body) : null}
 			{toast !== null && (
 				<Toast
 					key={toast.seq}

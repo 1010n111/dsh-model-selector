@@ -88,7 +88,8 @@ export const CSS: string = `
   /* 官方 useAnchoredPosition 返回视口坐标：fixed 定位让它不再依赖 .dms-root
      的 padding box，免去 root 左缘减法那一层坐标系转换。 */
   position: fixed;
-  z-index: 20;
+  /* portal 到 body 后不再受 composer 祖先层叠上下文限制。 */
+  z-index: 1000;
   display: flex;
   flex-direction: column;
   width: min(280px, calc(100vw - 32px));

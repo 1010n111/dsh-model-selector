@@ -57,6 +57,12 @@
 - **交互期间冻结菜单盒**：拖 effort 时记录并锁定菜单的 `height` 与 `left/top`，
   交互结束（关闭/视口变化）才释放。搜索框与列表因此不会因内部高度变化或锚点移动
   产生相对位移；此前“列表稳、搜索框跳”是菜单顶边在动、列表靠滚动锚定掩盖了位移。
+- **菜单 portal 到 body（对齐官方 ModelSelect）**：菜单原先渲染在 `.dms-root` 内，
+  composer 祖先的 transform/布局变化会让 `position: fixed` 的菜单跟着动（桌面 App
+  搜索框跳动的最可能来源）。改为 `createPortal(..., document.body)`；外部点击关闭
+  改为同时检查 root 与菜单，blur 允许焦点进入 portal，keydown 处理器挂到菜单上；
+  z-index 提到 1000。本地 mock profile 实测：搜索、内部点击、拖动、Escape、外部关闭
+  全部正常，拖动期间菜单 top/height 不变。
 - **刷新后位置跳变修复**：`.dms-effort-slider` 的 `flex-basis: 0` 在轨道里会被读成
   `主尺寸 0` 导致宽度不生长，导致刚打开/每次重渲染后滑块回跳到轨道起点。改为
   `flex: 1 1 auto` + `min-width: 0`。

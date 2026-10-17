@@ -571,6 +571,11 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 		? dmsRetainedEffortLabel(state)
 		: effectiveEffort === void 0 ? t("effort.providerDefault") : reasoning.efforts.find((level) => level.id === effectiveEffort)?.name ?? effectiveEffort;
 	const busy = dmsEffortBusy(false, state.status, state.pending);
+	// 列表变灰只在「换模型」时出现：纯 effort 提交（pending 与 current 同模型）也会
+	// 让 status 变 selecting，若也压灰列表，松手瞬间会整片变灰、RPC 返回又立刻恢复，
+	// 视觉上就是菜单闪一下（桌面 App 录屏实测）。effort 只压滑杆自身状态。
+	const pendingModelSwitch = state.pending !== null && state.current !== null
+		&& (state.pending.provider !== state.current.provider || state.pending.model !== state.current.model);
 	// choose 的最新输入面经 ref 读取：choose 因此不随 busy/current/choices/open 抖动
 	// —— 它作为行 props 传进 ModelOption，引用一变数百行的自定义 memo 就全线失效。
 	const chooseInputRef = react.useRef({ busy, current: state.current, choices, open });
@@ -1109,6 +1114,7 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 						// live region 会压制播报，而 menu 容器自身才是「内容仍在变」的子树。
 						role={hits !== null ? 'listbox' : 'menu'}
 						aria-busy={state.status === 'loading' || busy}
+						data-model-switch={pendingModelSwitch ? 'true' : undefined}
 						aria-label={t("menu.aria")}
 					>
 						{hits !== null

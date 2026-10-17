@@ -490,7 +490,9 @@ export const CSS: string = `
    不夺键盘焦点（aria-disabled 保连续性，见 ModelOption）。aria-busy 挂在
    role=menu/listbox 容器上（.dms-groups）—— 挂在外层 .dms-menu 会罩住
    live region、压制其播报。 */
-.dms-groups[aria-busy="true"] .dms-model-option { color: var(--dsw-alias-label-dimmed); }
+/* 只有「换模型」压灰列表；aria-busy 仍保留给读屏，但 loading / effort 提交不再
+   触发整片变灰（松手瞬间的明暗闪动来自这里）。 */
+.dms-groups[data-model-switch="true"] .dms-model-option { color: var(--dsw-alias-label-dimmed); }
 /* 搜索结果里的供应商标是区分跨供应商同名模型的唯一线索，之前无任何样式。 */
 .dms-model-option-provider {
   display: block;

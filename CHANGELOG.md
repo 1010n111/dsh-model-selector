@@ -36,6 +36,11 @@
   与 EffortSlider 的 `is-busy` 变暗都去掉；列表改由容器 `aria-busy` 表达，交互由
   `choose` 的 ref 守卫拦截。`.dms-menu` 加 `will-change: transform` + `isolation:
   isolate` 常驻合成层，子层重绘不再波及整个 fixed 菜单。
+- **松手闪动根因修复（录屏定位）**：`aria-busy="true"` 会触发
+  `.dms-groups[aria-busy=true] .dms-model-option { color: dimmed }`，而提交 effort 时
+  status 也会变 `selecting`——松手瞬间整片模型列表变灰、RPC 返回又立刻恢复，视觉上
+  就是菜单闪一下。现在把「压灰列表」拆到独立的 `data-model-switch`：只有换模型才变灰；
+  aria-busy 仍保留给读屏，loading / effort 提交不再触发视觉变灰。
 - **刷新后位置跳变修复**：`.dms-effort-slider` 的 `flex-basis: 0` 在轨道里会被读成
   `主尺寸 0` 导致宽度不生长，导致刚打开/每次重渲染后滑块回跳到轨道起点。改为
   `flex: 1 1 auto` + `min-width: 0`。

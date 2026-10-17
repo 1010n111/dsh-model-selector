@@ -342,7 +342,7 @@ export const EffortSlider = react.memo(function EffortSlider({ state, select, t,
 	const style = { "--dms-thumb-left": thumbLeft } as react.CSSProperties;
 	return (
 		<div
-			className={`dms-effort${dragging ? " is-dragging" : ""}${busy ? " is-busy" : ""}${error === null ? "" : " is-error"}${isMax ? " is-max" : ""}`}
+			className={`dms-effort${dragging ? " is-dragging" : ""}${error === null ? "" : " is-error"}${isMax ? " is-max" : ""}`}
 		>
 			<div
 				className="dms-effort-slider"
@@ -397,7 +397,6 @@ interface ModelOptionProps {
 	model: ModelProviderGroup['models'][number]
 	showProvider: boolean
 	selected: boolean
-	busy: boolean
 	/** 键盘导航用的稳定行标识：菜单内 `[data-row-key]` 查询即按 DOM 顺序聚焦。 */
 	rowKey: string
 	/** roving tabindex：true = 当前活动行（唯一可 Tab 到的模型行，其余 -1）。 */
@@ -424,7 +423,7 @@ interface ModelOptionProps {
  * 但 100 条命中里绝大多数命中区间不变——按值比较 start/end，值相同即跳过
  * 重渲染，搜索才不卡顿。
  */
-const ModelOption = react.memo(function ModelOption({ group, model, showProvider, selected, busy, rowKey, active, searchMode, onRowFocus, nameHit, setsize, posinset, t, onChoose }: ModelOptionProps) {
+const ModelOption = react.memo(function ModelOption({ group, model, showProvider, selected, rowKey, active, searchMode, onRowFocus, nameHit, setsize, posinset, t, onChoose }: ModelOptionProps) {
 	const hit = nameHit === undefined || nameHit === null || nameHit.start === nameHit.end
 		? null
 		: [
@@ -453,7 +452,6 @@ const ModelOption = react.memo(function ModelOption({ group, model, showProvider
 			tabIndex={active ? 0 : -1}
 			className={`dms-model-option${selected ? " dms-model-optionSelected" : ""}`}
 			title={model.description === undefined ? model.name : `${model.name} — ${model.description}`}
-			aria-disabled={busy}
 			onFocus={() => onRowFocus(rowKey)}
 			onClick={() => onChoose({ provider: group.id, model: model.id })}
 		>
@@ -479,7 +477,6 @@ const ModelOption = react.memo(function ModelOption({ group, model, showProvider
 	if (prev.model !== next.model) return false;
 	if (prev.showProvider !== next.showProvider) return false;
 	if (prev.selected !== next.selected) return false;
-	if (prev.busy !== next.busy) return false;
 	if (prev.rowKey !== next.rowKey) return false;
 	if (prev.active !== next.active) return false;
 	if (prev.searchMode !== next.searchMode) return false;
@@ -1124,7 +1121,6 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 										model={hit.model}
 										showProvider
 										selected={state.current?.provider === hit.group.id && state.current.model === hit.model.id}
-										busy={busy}
 										rowKey={rowKey}
 										active={rowKey === activeRowKey}
 										searchMode
@@ -1175,7 +1171,6 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 													model={model}
 													showProvider={false}
 													selected={state.current?.provider === group.id && state.current.model === model.id}
-													busy={busy}
 													rowKey={rowKey}
 													active={rowKey === activeRowKey}
 													searchMode={false}

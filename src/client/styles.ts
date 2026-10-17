@@ -433,10 +433,6 @@ export const CSS: string = `
   outline: 1px solid var(--dsw-alias-state-error-secondary);
   outline-offset: 2px;
 }
-/* 忙态提示：只压两处子元素，不给整行加 opacity——整行会新建合成层，
-   与拖动结束的提交同一帧触发时菜单会闪一下白。 */
-.dms-effort.is-busy .dms-effort-track,
-.dms-effort.is-busy .dms-effort-value { opacity: .72; }
 .dms-effort-error { flex: 1 0 100%; margin-top: 8px; padding: 6px 10px; border-radius: 8px; color: var(--dsw-alias-state-error-primary, #c83e4d); background: var(--dsw-alias-state-error-tertiary, rgba(220,55,70,.08)); font-size: 11px; line-height: 1.5; }
 /* 常驻容器（内容随状态更新）：空时收起，不占位。 */
 .dms-effort-error:empty { display: none; }

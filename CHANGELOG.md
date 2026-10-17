@@ -32,6 +32,10 @@
   （整行新建合成层）、最高档上下时 canvas 节点增删（重建合成层）、渐变 `background`
   过渡的中间帧。现在粒子 canvas 常驻（非最高档只 clear）、忙态只压轨道与读数、
   不再过渡 background，并给滑块加常驻 `translateZ(0)` 合成层。
+- **松手闪白二次收口**：提交时 `busy` 传给每一行 `ModelOption`（memo 失效，整列表重绘）
+  与 EffortSlider 的 `is-busy` 变暗都去掉；列表改由容器 `aria-busy` 表达，交互由
+  `choose` 的 ref 守卫拦截。`.dms-menu` 加 `will-change: transform` + `isolation:
+  isolate` 常驻合成层，子层重绘不再波及整个 fixed 菜单。
 - **刷新后位置跳变修复**：`.dms-effort-slider` 的 `flex-basis: 0` 在轨道里会被读成
   `主尺寸 0` 导致宽度不生长，导致刚打开/每次重渲染后滑块回跳到轨道起点。改为
   `flex: 1 1 auto` + `min-width: 0`。

@@ -345,10 +345,12 @@ export const CSS: string = `
 /* 档位读数：拖动时实时跟随 preview，替代此前只有读屏能看到的 aria-valuetext。 */
 .dms-effort-value {
   flex: 0 0 auto;
-  /* 读数贴住行右缘（右对齐），宽度随文字收缩：轨道与文字之间只留 8px，
-     不会出现固定宽度里那段空白。 */
+  /* 固定槽位（min-width 4em）+ 右对齐：文字贴住行右缘，同时宽度不随档位名
+     长短变化——否则拖动时轨道长度会跟着档位文字来回伸缩。4em 可完整容纳
+     Medium/Xhigh；更长的本地化档位名仍可自然撑开。 */
   margin-left: 8px;
   width: auto;
+  min-width: 4em;
   color: var(--dsw-static-blue-500, #3b82f6);
   font-size: 11px;
   line-height: 16px;

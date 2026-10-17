@@ -134,7 +134,8 @@ export const CSS: string = `
 .dms-status {
   position: absolute;
   z-index: 7;
-  top: 4px;
+  /* 放在搜索框下方：即使真的加载较久，也不会盖住输入框。 */
+  top: 42px;
   left: 4px;
   right: 4px;
   padding: 8px 10px;

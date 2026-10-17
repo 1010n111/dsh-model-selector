@@ -632,6 +632,17 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 		lastLoadRef.current = Date.now();
 		loadRef.current();
 	}, [available, open, state.status, state.pending, state.groups.length]);
+	// 目录刷新常常只有 10–30ms（每次提交都会触发）；loading 浮层若立即出现会盖住
+	// 搜索框闪一帧，被感知成“搜索框跳动”。延迟 250ms 再渲染，短加载零闪烁。
+	const [showLoading, setShowLoading] = react.useState(false);
+	react.useEffect(() => {
+		if (!open || state.status !== "loading") {
+			setShowLoading(false);
+			return;
+		}
+		const timer = window.setTimeout(() => setShowLoading(true), 250);
+		return () => window.clearTimeout(timer);
+	}, [open, state.status]);
 	// 菜单高度按视口实测钳位（原先 CSS 写死 min(420px, 100vh - 96px)），
 	// composer 变高/窗口变小时自动收，不再溢出。方向仍由本组件按 trigger 上下
 	// 空间选边（官方 hook 只负责摆位，不替你选边），两侧共用同一份高度状态。
@@ -1083,7 +1094,7 @@ export function ModelSelect({ locked, available, directory, load, select, t }: M
 					}}
 					className={'dms-menu dms-menuModel' + (menuAbove ? '' : ' dms-menuBelow')}
 				>
-					{state.status === 'loading' && <div className="dms-status" role="status">{t('status.loading')}</div>}
+					{showLoading && <div className="dms-status" role="status">{t('status.loading')}</div>}
 					{renderErrorStrip()}
 					{/* role=alert 挂容器：一次 load 可能多家供应商同时失败，逐条 alert
 					    会连播数遍。 */}

@@ -6,6 +6,29 @@
 
 本 CHANGELOG 自 0.1.17 起建立并回填：更早的历史以 GitHub Release 与 git tag 为准。
 
+## [0.4.0] - 2026-10-17
+
+### 变更
+
+- **推理强度滑杆视觉重做：对齐 Codex 的思考等级条**。用户提供 Codex 截图后按图复刻：
+  中性灰圆角轨道（高 20px）+ 等距档位圆点（3px，填充区内提亮）+ 实心蓝填充
+  `var(--dsw-static-blue-500)` + 白色圆形滑块（24px，柔和落影）；档位读数改为强调蓝，
+  最高档改为紫色。**只有最高档（Ultra/Max）**切换为蓝紫渐变并在填充区内跑稀疏白色粒子，
+  其余档位完全静止。
+- **删除辐射 canvas**：`effortCanvas.ts`（233 行，列能量/径向光晕/粒子流/热核）与
+  `DRAG_EASE`/`IDLE_EASE` 常驻 rAF 循环整体移除，替成 100 行的
+  `effortParticles.ts`（最多 18 颗 1px 白点，仅最高档启动，`prefers-reduced-motion`
+  下只画一帧静态星点）。client bundle 99.1 kB → 89.3 kB。
+- 交互不变：仍是拖拽跟手 + 松手磁吸到最近档位；键盘 Arrow/Home/End 与
+  `aria-valuetext` 行为不变。深色/浅色主题都走 token 与既有主题选择器。
+
+### 测试
+
+- 121 条测试全绿；双 program `typecheck` 绿；`lib/` 已重建（`effortParticles.d.ts` 随源
+  文件集合更新，`effortCanvas.d.ts` 已删除）。
+- 视觉样机（同 CSS/结构）在 280px 菜单宽度下对比截图：常规档蓝色实心 + 白点 + 白钮；
+  最高档渐变 + 粒子；深浅色各一版。
+
 ## [0.3.9] - 2026-10-17
 
 ### 变更

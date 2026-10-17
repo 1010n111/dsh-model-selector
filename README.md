@@ -20,7 +20,7 @@
 - 菜单定位走官方 `useAnchoredPosition`（右缘对齐 seat + 视口钳位 + 跟随浮层尺寸变化），弹出方向按上下空间自适应，高度按可用空间收紧，矮窗口不溢出
 - 键盘可完整操作：方向键在结果间移动、搜索框内 Enter 选中首个命中、Escape 先清搜索词再关闭并还原焦点；IME 组合输入的确认键不会被误当成「选中首个命中」
 - 无障碍：搜索框是 combobox（结果列表 listbox / 分组视图 menu）、roving tabindex 只留一个 Tab 停靠点（全折叠时落在组头）、焦点指示与选中态可辨、状态变化经常驻 live region 播报
-- 选中模型后可展开底部内联**推理强度滑杆**，实时显示当前档位名与该档位说明
+- 选中模型后可展开底部内联**推理强度滑杆（Codex 式）**：灰色圆角轨道 + 档位圆点 + 实心蓝填充 + 白色圆形滑块；最高档切换为蓝紫渐变并跑稀疏白色粒子，其余档位完全静止；实时显示当前档位名与说明
 - 切换被宿主拒绝时，失败原因用官方 Toast 在输入区上方播报（菜单已关闭也能看到）
 - 选择推理模型会自动落到**最强思考档**（仅限已知档位；适配器自造档位不猜），并在成功后提示落到的档位（行上有「推理」标记说明）
 - 与 `/model` 弹窗共用官方 `modelDirectories` 目录，两处实时同步
@@ -80,7 +80,7 @@ pnpm validate:registry  # 上架前自检（当前 = pnpm test）
 | --- | --- |
 | `src/client/ModelSelect.tsx` 顶部 | `DIRECTORY_STALE_MS` / `MAX_VISIBLE_HITS` / `EFFORT_COMMIT_TIMEOUT_MS` |
 | `src/client/menuFit.ts` | `MENU_MAX_HEIGHT` / `MENU_VIEWPORT_MARGIN` |
-| `src/client/effortCanvas.ts` | `DRAG_EASE` / `IDLE_EASE` / `SETTLE_EPSILON`（辐射特效手感） |
+| `src/client/effortParticles.ts` | `COUNT`（最高档粒子数；只有 Ultra/Max 档位启动，`prefers-reduced-motion` 下静止） |
 | `src/client/effort.ts` | `EFFORT_RANK`（档位强弱序，决定「最强思考档」） |
 
 `search.ts`（折叠匹配/命中窗口/空态）、`keys.ts`（键盘状态机）、`copy.ts`（trigger

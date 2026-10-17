@@ -314,11 +314,12 @@ export const CSS: string = `
   flex: 0 0 auto;
   margin-left: 8px;
   min-width: 3.2em;
-  color: var(--dsw-alias-label-primary);
+  color: var(--dsw-static-blue-500, #3b82f6);
   font-size: 11px;
   line-height: 16px;
   text-align: right;
 }
+.dms-effort.is-max .dms-effort-value { color: #8b5cf6; }
 /* 官方契约的 efforts[].description，整行展示在滑杆下方。 */
 .dms-effort-desc {
   flex: 1 0 100%;
@@ -328,106 +329,73 @@ export const CSS: string = `
   line-height: 14px;
 }
 .dms-effort-slider {
-  --dms-progress: 50%;
+  /* 由组件写入：滑块中心位置（相对轨道），两端各留 12px（滑块半径）。 */
+  --dms-thumb-left: 12px;
   position: relative;
   width: 100%;
   height: 30px;
   flex: 1 1 0;
   min-width: 0;
-  border-radius: 999px;
   isolation: isolate;
-  transition: filter 180ms ease;
 }
+/* Codex 式轨道：一条中性灰胶囊，档位点直接落在轨道上。 */
 .dms-effort-track {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 20px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .10);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), inset 0 -1px 0 rgba(0,0,0,.30);
   overflow: hidden;
-  border-radius: inherit;
-  background: linear-gradient(100deg, #03040a 0%, #071126 22%, #101d4c 45%, #302262 70%, #5d35a0 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(189, 199, 255, .15),
-    inset 0 -1px 0 rgba(0, 0, 0, .55),
-    0 3px 10px rgba(12, 17, 55, .34);
 }
-.dms-effort-track::after {
-  content: "";
+.dms-effort-fill {
   position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 18% 45%, rgba(82, 130, 255, .12), transparent 24%),
-    linear-gradient(90deg, rgba(0, 0, 0, .28), transparent 42%, rgba(168, 113, 255, .12));
-  pointer-events: none;
-}
-.dms-effort-fx {
-  position: absolute;
-  z-index: 1;
-  inset: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--dms-thumb-left);
+  border-radius: 999px;
+  background: var(--dsw-static-blue-500, #3b82f6);
+  transition: width 200ms cubic-bezier(.22,1,.36,1), background 220ms ease;
   overflow: hidden;
-  border-radius: inherit;
-  pointer-events: none;
 }
-.dms-effort-canvas {
+/* 只有最高档（Ultra/Max）换成蓝紫渐变 + 粒子；其余档位保持实心蓝、完全静止。 */
+.dms-effort.is-max .dms-effort-fill {
+  background: linear-gradient(90deg, var(--dsw-static-blue-500, #3b82f6) 0%, #6d5cff 55%, #a855f7 100%);
+}
+.dms-effort-particles {
   position: absolute;
-  z-index: 2;
   inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 1;
-  image-rendering: pixelated;
-  mix-blend-mode: screen;
-  transition: filter 140ms ease;
-}
-.dms-effort-flare {
-  position: absolute;
-  z-index: 3;
-  transition: left 70ms linear, filter 140ms ease;
-  top: 50%;
-  left: var(--dms-progress);
-  width: 78px;
-  height: 46px;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at 100% 50%, rgba(255,255,255,.96) 0 4%, rgba(188,189,255,.8) 11%, rgba(106,87,255,.5) 28%, rgba(105,31,255,.2) 49%, transparent 74%);
-  filter: blur(2px) saturate(1.25);
-  mix-blend-mode: screen;
-  transform: translate(-100%, -50%);
   pointer-events: none;
 }
-.dms-effort-flare::before,
-.dms-effort-flare::after {
-  content: "";
+.dms-effort-dot {
   position: absolute;
-  inset: 50% auto auto 100%;
-  border-radius: 999px;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
   transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, .26);
+  transition: background 160ms ease;
 }
-.dms-effort-flare::before {
-  width: 52px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(100,160,255,.42), #f1ecff, rgba(193,82,255,.65), transparent);
-  box-shadow: 0 0 7px #9b7cff, 0 0 13px rgba(72,132,255,.64);
-}
-.dms-effort-flare::after {
-  width: 1px;
-  height: 20px;
-  background: linear-gradient(180deg, transparent, rgba(196,190,255,.84), transparent);
-  box-shadow: 0 0 7px #9c7cff;
-}
+.dms-effort-dot.is-on { background: rgba(255, 255, 255, .62); }
 .dms-effort-knob {
   position: absolute;
   z-index: 4;
   top: 50%;
-  left: clamp(14px, var(--dms-progress), calc(100% - 14px));
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgba(255,255,255,.94);
+  left: var(--dms-thumb-left);
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: #fff;
-  box-shadow:
-    0 0 0 2px rgba(92,105,255,.12),
-    0 0 14px rgba(121,82,255,.48),
-    0 2px 7px rgba(0,0,0,.3);
+  box-shadow: 0 1px 3px rgba(0,0,0,.35), 0 0 0 .5px rgba(0,0,0,.08);
   transform: translate(-50%, -50%);
-  transition: left 240ms cubic-bezier(.22,1,.36,1), transform 160ms ease, box-shadow 180ms ease;
+  transition: left 200ms cubic-bezier(.22,1,.36,1), transform 120ms ease;
   pointer-events: none;
 }
 .dms-effort-input {
@@ -446,22 +414,10 @@ export const CSS: string = `
   outline: 2px solid var(--dsw-static-blue-400);
   outline-offset: 2px;
 }
-.dms-effort.is-dragging .dms-effort-canvas {
-  filter: saturate(1.45) brightness(1.28) contrast(1.06);
-}
-.dms-effort.is-dragging .dms-effort-flare {
-  filter: blur(1.5px) saturate(1.6) brightness(1.42);
-  transition: none;
-}
-.dms-effort.is-dragging .dms-effort-knob {
-  transform: translate(-50%, -50%) scale(1.07);
-  transition: none;
-  box-shadow:
-    0 0 0 3px rgba(113,115,255,.25),
-    0 0 20px rgba(74,145,255,.86),
-    0 0 31px rgba(171,53,255,.66),
-    0 3px 8px rgba(0,0,0,.32);
-}
+/* 拖动时滑块跟手，不保留上一段过渡；松手磁吸由 React 的 preview 回写照常。 */
+.dms-effort.is-dragging .dms-effort-fill,
+.dms-effort.is-dragging .dms-effort-knob { transition: none; }
+.dms-effort.is-dragging .dms-effort-knob { transform: translate(-50%, -50%) scale(1.06); }
 .dms-effort.is-error .dms-effort-slider {
   outline: 1px solid var(--dsw-alias-state-error-secondary);
   outline-offset: 2px;
@@ -544,70 +500,21 @@ export const CSS: string = `
   from { opacity: 0; transform: translateY(-5px) scale(.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-body:not([data-ds-dark-theme]) .dms-effort-slider {
-  filter: none;
-}
 body:not([data-ds-dark-theme]) .dms-effort-track {
-  background: var(--dsw-static-blue-75, #e5f0ff);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.9),
-    inset 0 0 0 1px rgba(80,133,194,.14),
-    0 3px 10px rgba(48,101,165,.13);
+  background: #e9e9e9;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.65);
 }
-body:not([data-ds-dark-theme]) .dms-effort-track::before {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  inset: 0 auto 0 0;
-  width: var(--dms-progress);
-  border-radius: inherit;
-  background: linear-gradient(90deg, #fff 0%, #e2f0ff 20%, #a8d0fb 57%, #438fdf 100%);
-  transition: width 240ms cubic-bezier(.22,1,.36,1);
-}
-body:not([data-ds-dark-theme]) .dms-effort.is-dragging .dms-effort-track::before {
-  transition: none;
-}
-body:not([data-ds-dark-theme]) .dms-effort-track::after {
-  z-index: 1;
-  background: linear-gradient(90deg, rgba(255,255,255,.48), transparent 34%, rgba(23,101,201,.07));
-}
-body:not([data-ds-dark-theme]) .dms-effort-canvas {
-  opacity: .78;
-  mix-blend-mode: multiply;
-}
-body:not([data-ds-dark-theme]) .dms-effort-flare {
-  background: radial-gradient(ellipse at 100% 50%, rgba(255,255,255,.98) 0 5%, rgba(204,231,255,.88) 13%, rgba(91,162,241,.48) 31%, rgba(37,111,207,.16) 53%, transparent 75%);
-  filter: blur(2px) saturate(1.12);
-}
-body:not([data-ds-dark-theme]) .dms-effort-flare::before {
-  background: linear-gradient(90deg, transparent, rgba(116,177,244,.34), #fff, rgba(66,139,225,.58), transparent);
-  box-shadow: 0 0 7px rgba(58,133,222,.5), 0 0 13px rgba(104,176,255,.38);
-}
-body:not([data-ds-dark-theme]) .dms-effort-flare::after {
-  background: linear-gradient(180deg, transparent, rgba(255,255,255,.94), transparent);
-  box-shadow: 0 0 7px rgba(64,137,224,.44);
-}
+body:not([data-ds-dark-theme]) .dms-effort-dot { background: rgba(0,0,0,.18); }
+body:not([data-ds-dark-theme]) .dms-effort-dot.is-on { background: rgba(255,255,255,.78); }
 body:not([data-ds-dark-theme]) .dms-effort-knob {
-  border-color: rgba(126,160,197,.32);
-  box-shadow:
-    0 0 0 2px rgba(58,124,207,.09),
-    0 0 13px rgba(48,118,207,.3),
-    0 3px 8px rgba(39,77,119,.18);
-}
-body:not([data-ds-dark-theme]) .dms-effort.is-dragging .dms-effort-knob {
-  box-shadow:
-    0 0 0 3px rgba(36,105,192,.15),
-    0 0 20px rgba(25,100,201,.45),
-    0 3px 8px rgba(39,77,119,.18);
+  box-shadow: 0 1px 3px rgba(0,0,0,.22), 0 0 0 .5px rgba(0,0,0,.06);
 }
 @media (prefers-reduced-motion: reduce) {
   .dms-chevron,
   .dms-groupChevron,
-  .dms-effort-slider,
-  .dms-effort-canvas,
-  .dms-effort-knob,
-  .dms-effort-flare,
-  body:not([data-ds-dark-theme]) .dms-effort-track::before { transition: none; }
+  .dms-effort-fill,
+  .dms-effort-dot,
+  .dms-effort-knob { transition: none; }
   .dms-menu { animation: none; }
 }
 

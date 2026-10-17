@@ -34,7 +34,7 @@ import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { dmsChoosePlan, dmsClampIndex, dmsEffortIndex, dmsEffectiveEffortIndex, dmsEffortBusy, dmsRetainedEffortLabel, dmsShouldAdoptLateSuccess, dmsSliderLevels } from './effort.ts'
 // 辐射画布（绘制纯函数 + 动画循环 hook）与指针拖动状态机：从 EffortSlider
 // 组件内拆分独立成模块，组件本体只保留档位/提交/渲染三件事。
-import { useEffortCanvas } from './effortCanvas.ts'
+import { useMaxParticles } from './effortParticles.ts'
 import { useEffortDrag } from './effortDrag.ts'
 // Menu direction/clamp helpers likewise (pure — the direction flip and the
 // below-clamp are user-visible and were previously only browser-testable).
@@ -87,10 +87,10 @@ const MAX_VISIBLE_HITS = 100;
  * 必须释放滑杆的 committing 锁并回滚，否则滑杆被锁死到菜单关闭。
  * 调法：后端/网络慢时调大避免误回滚（滑杆锁死时间随之变长）；调小更早释放交互。 */
 const EFFORT_COMMIT_TIMEOUT_MS = 12e3;
-// ── 推理强度滑块（移植自 dsh-reasoning-effort：辐射特效 + 档位随模型自动适配）──
-// 绘制与动画循环见 ./effortCanvas.ts（dmsDrawRadiation / useEffortCanvas），
-// 指针拖动状态机见 ./effortDrag.ts（useEffortDrag）；本组件只做档位状态、
-// 提交/回滚与渲染。
+// ── 推理强度滑块（档位随模型自动适配）──
+// 视觉对齐 Codex 的思考等级条：灰色圆角轨道 + 档位圆点 + 实心蓝填充 + 白色圆形滑块；
+// 只有最高档（Ultra/Max）用蓝紫渐变并在填充区内跑稀疏粒子（见 ./effortParticles.ts）。
+// 指针拖动状态机见 ./effortDrag.ts（useEffortDrag）；本组件只做档位状态、提交/回滚与渲染。
 export const EffortSlider = react.memo(function EffortSlider({ state, select, t, onSelectFailure }: EffortSliderProps) {
 	const levels = dmsSliderLevels(state);
 	// 惰性初始化到当前生效档：useState("")/0 会让菜单打开的第一帧档位名为空、
@@ -103,7 +103,7 @@ export const EffortSlider = react.memo(function EffortSlider({ state, select, t,
 	// 提交发起时闭包里捕获的那份（见 dmsShouldAdoptLateSuccess 的 sameModel）。
 	const stateRef = react.useRef(state);
 	stateRef.current = state;
-	const canvasRef = react.useRef<HTMLCanvasElement | null>(null);
+	const particlesRef = react.useRef<HTMLCanvasElement | null>(null);
 	const inputRef = react.useRef<HTMLInputElement | null>(null);
 	const committedRef = react.useRef("");
 	const committingRef = react.useRef(false);
@@ -116,14 +116,6 @@ export const EffortSlider = react.memo(function EffortSlider({ state, select, t,
 	const mountedRef = react.useRef(false);
 	// 提交纪元：单调递增，迟到采纳判据靠它区分「无新提交」与「新提交失败回滚」。
 	const commitEpochRef = react.useRef(0);
-	// 辐射状态由组件持有：preview 变化/拖动时更新 target/dragging 驱动重绘；
-	// progress 惰性对齐当前档位（打开菜单首帧即正确，无中间态缓动）。useRef
-	// 初始化表达式每次渲染都会求值但仅首帧生效，这里取首次渲染的档位作起点。
-	const radiationRef = react.useRef<{ progress: number; dragging: boolean; target?: number }>({
-		progress: levels.length >= 2 ? dmsEffectiveEffortIndex(levels, state) / (levels.length - 1) : 0.5,
-		dragging: false,
-	});
-	const redrawRef = react.useRef<(() => void) | null>(null);
 	const available = state.current !== null && levels.length >= 2;
 	// pending 取自 state（组件 prop 直接持有）：rc.2 官方目录在 select() 入口即写
 	// pending，status 要等 RPC 返回才翻到 selecting——这段窗口期内必须已算忙，
@@ -145,14 +137,10 @@ export const EffortSlider = react.memo(function EffortSlider({ state, select, t,
 	}, [available, levels, state.current?.provider, state.current?.model, state.current?.reasoningEffort]);
 	react.useEffect(() => {
 		previewRef.current = preview;
-		radiationRef.current.target = levels.length >= 2 ? preview / (levels.length - 1) : 0.5;
-		redrawRef.current?.();
-	}, [preview, levels.length]);
-	const redraw = useEffortCanvas(canvasRef, radiationRef);
-	react.useEffect(() => {
-		redrawRef.current = redraw;
-		return () => { redrawRef.current = null; };
-	}, [redraw]);
+	}, [preview]);
+	// 最高档才跑粒子：预览到达最后一档即亮（拖动中途贴近也会亮），离开立刻停。
+	const isMax = levels.length >= 2 && preview >= levels.length - 1 - 1e-6;
+	useMaxParticles(particlesRef, isMax);
 	// 卸载清理：迟到的 select settle 不再 setState（迟到成功采纳/超时回滚的
 	// setState 都经 mountedRef 守卫）；未决的超时定时器直接清除——组件已卸载，
 	// 回滚/采纳都无人可见，定时器没有存在的意义。
@@ -320,9 +308,8 @@ export const EffortSlider = react.memo(function EffortSlider({ state, select, t,
 	const { dragging } = drag;
 	// 拖动态同步到辐射状态与画布（preview effect 已处理 target，这里只切 dragging 速度）。
 	react.useEffect(() => {
-		radiationRef.current.dragging = dragging;
-		redrawRef.current?.();
-	}, [dragging]);
+		previewRef.current = preview;
+	}, [preview]);
 	const onKeyDown = (event: react.KeyboardEvent<HTMLInputElement>): void => {
 		const current = dmsClampIndex(Number(event.currentTarget.value), levels.length);
 		let target;
@@ -346,20 +333,29 @@ export const EffortSlider = react.memo(function EffortSlider({ state, select, t,
 	const count = levels.length;
 	const effortName = levels[dmsEffortIndex(levels, effort)]?.name ?? effort;
 	const effortDesc = levels[dmsEffortIndex(levels, effort)]?.description;
-	const progress = preview / (count - 1) * 100;
-	const style = { "--dms-progress": `${progress}%` } as react.CSSProperties;
+	// 滑块中心与档位点的坐标基准：两端各留 12px（滑块半径），让白色圆钮始终完整
+	// 落在轨道内。Codex 的轨道两端就是「首/末档」的位置。
+	const thumbLeft = `calc(12px + (100% - 24px) * ${preview / (count - 1)})`;
+	const style = { "--dms-thumb-left": thumbLeft } as react.CSSProperties;
 	return (
 		<div
-			className={`dms-effort${dragging ? " is-dragging" : ""}${busy ? " is-busy" : ""}${error === null ? "" : " is-error"}`}
+			className={`dms-effort${dragging ? " is-dragging" : ""}${busy ? " is-busy" : ""}${error === null ? "" : " is-error"}${isMax ? " is-max" : ""}`}
 		>
 			<div
 				className="dms-effort-slider"
 				style={style}
 			>
-				<div className="dms-effort-track" aria-hidden="true" />
-				<div className="dms-effort-fx" aria-hidden="true">
-					<canvas ref={canvasRef} className="dms-effort-canvas" />
-					<span className="dms-effort-flare" />
+				<div className="dms-effort-track" aria-hidden="true">
+					<div className="dms-effort-fill">
+						{isMax ? <canvas ref={particlesRef} className="dms-effort-particles" /> : null}
+					</div>
+					{levels.map((level, index) => (
+						<span
+							key={level.id}
+							className={`dms-effort-dot${index <= preview + 1e-6 ? " is-on" : ""}`}
+							style={{ left: `calc(12px + (100% - 24px) * ${index / (count - 1)})` }}
+						/>
+					))}
 				</div>
 				<input
 					ref={inputRef}

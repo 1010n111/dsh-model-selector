@@ -6,6 +6,19 @@
 
 本 CHANGELOG 自 0.1.17 起建立并回填：更早的历史以 GitHub Release 与 git tag 为准。
 
+## [0.4.2] - 2026-10-18
+
+### 变更
+
+- **清单补齐兼容声明**：`engines.node` `>=22.19.0`、`engines.dsh` `^0.2.1-rc.2`，
+  便于 dsh-market / DSH-Store 等目录识别宿主兼容范围。
+- README 增加「兼容性」小节（DSH 0.2.1-rc.2 / Node.js >=22.19 / web profile / 无生命周期脚本）。
+- 无代码行为变更。
+
+### 测试
+
+- 121 条测试全绿；双 program `typecheck` 绿。
+
 ## [0.4.1] - 2026-10-18
 
 ### 变更

@@ -1,6 +1,6 @@
 {
   "name": "@bittersmilezzz/dsh-model-selector",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "DeepSeek Harness 的增强模型选择器：单层菜单（搜索 + 分组）+ 底部内联推理强度（Effort）滑杆。",
   "type": "module",
   "main": "lib/index.js",
@@ -37,6 +37,10 @@
     "validate:registry": "node --test test/*.test.mjs"
   },
   "license": "MIT",
+  "engines": {
+    "node": ">=22.19.0",
+    "dsh": "^0.2.1-rc.2"
+  },
   "keywords": [
     "dsh",
     "dsh-plugin",

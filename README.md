@@ -38,6 +38,12 @@ dsh plugin --profile <profile> add <path-to-repo>
 
 启用后刷新浏览器页面（web profile），模型选择器即替换输入区原 seat。
 
+## 兼容性
+
+- DSH `0.2.1-rc.2`（`peerDependencies` 锁定同版本；`engines.dsh` 同步声明）
+- Node.js `>=22.19.0`
+- 仅 web profile 的 client 半区；无系统级依赖、无生命周期脚本（无 preinstall/install/postinstall/prepare）
+
 ## 配置
 
 无设置项（纯 UI 插件），不占用「设置 → 插件 → 配置」卡片位。

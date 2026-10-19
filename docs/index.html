@@ -428,17 +428,17 @@
       left: 0;
       width: 100%;
       height: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 10px;
       pointer-events: none;
     }
     .mock-dot {
+      position: absolute;
+      top: 50%;
       width: 3px;
       height: 3px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.65);
+      transform: translate(-50%, -50%);
+      transition: background 0.15s ease;
     }
     .mock-slider-thumb {
       position: absolute;
@@ -460,6 +460,15 @@
       min-width: 44px;
       text-align: right;
     }
+    .mock-effort-note {
+      margin: 0;
+      padding: 0 14px 12px;
+      font-size: 0.75rem;
+      line-height: 1.5;
+      color: var(--text-dim);
+      background: var(--menu-bg);
+    }
+    .mock-effort-bar + .mock-effort-note { padding-top: 0; }
 
     /* Features Grid */
     .features {
@@ -662,19 +671,16 @@
             <span class="mock-effort-label">推理等级</span>
             <div class="mock-slider-track-wrap" id="sliderTrackWrap">
               <div class="mock-slider-track">
-                <div class="mock-slider-fill max-tier" id="sliderFill">
+                <div class="mock-slider-fill" id="sliderFill">
                   <canvas class="mock-slider-particles" id="particleCanvas"></canvas>
                 </div>
-                <div class="mock-slider-dots">
-                  <span class="mock-dot"></span>
-                  <span class="mock-dot"></span>
-                  <span class="mock-dot"></span>
-                </div>
+                <div class="mock-slider-dots" id="sliderDots"></div>
               </div>
               <div class="mock-slider-thumb" id="sliderThumb"></div>
             </div>
-            <span class="mock-effort-val" id="effortVal">Max</span>
+            <span class="mock-effort-val" id="effortVal">Medium</span>
           </div>
+          <p class="mock-effort-note" id="effortNote">可选档位取决于模型。示例模型提供 5 档。</p>
         </div>
       </div>
     </section>
@@ -785,15 +791,25 @@
       applyTheme();
     });
 
-    // Mock Models Data
+    // Mock Models Data — `tiers` mirrors what an adapter advertises per model.
     const models = [
-      { name: 'deepseek-flash', group: 'DeepSeek', desc: '高速日常模型', effort: true },
-      { name: 'DeepSeek-V4-Pro', group: 'DeepSeek', desc: '强推理代码与问答', effort: true, active: true },
-      { name: 'DeepSeek-V4.1-Flash', group: 'DeepSeek Account', desc: '新代轻量版本', effort: true },
-      { name: 'DeepSeek-V4-Pro (OAuth)', group: 'DeepSeek Account', desc: '官方直连强推理', effort: true },
-      { name: 'Claude 3.7 Sonnet', group: 'Anthropic', desc: '深度思考与分析', effort: true },
-      { name: 'GPT-4.5', group: 'OpenAI', desc: '多任务推理', effort: true }
+      { name: 'deepseek-flash', group: 'DeepSeek', desc: '高速日常模型', tiers: ['off', 'low', 'medium', 'high'] },
+      { name: 'DeepSeek-V4-Pro', group: 'DeepSeek', desc: '强推理代码与问答', tiers: ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'], active: true },
+      { name: 'DeepSeek-V4.1-Flash', group: 'DeepSeek Account', desc: '新代轻量版本', tiers: ['off', 'low', 'medium', 'high'] },
+      { name: 'DeepSeek-V4-Pro (OAuth)', group: 'DeepSeek Account', desc: '官方直连强推理', tiers: ['low', 'medium', 'high', 'xhigh'] },
+      { name: 'Claude 3.7 Sonnet', group: 'Anthropic', desc: '深度思考与分析', tiers: ['off', 'low', 'medium', 'high', 'max'] },
+      { name: 'GPT-4.5', group: 'OpenAI', desc: '多任务推理', tiers: ['minimal', 'low', 'medium', 'high'] }
     ];
+
+    const EFFORT_LABEL = {
+      off: 'Off',
+      minimal: 'Minimal',
+      low: 'Low',
+      medium: 'Medium',
+      high: 'High',
+      xhigh: 'Xhigh',
+      max: 'Max'
+    };
 
     const mockList = document.getElementById('mockList');
     const mockSearch = document.getElementById('mockSearch');
@@ -854,6 +870,7 @@
             models.forEach(m => m.active = false);
             item.active = true;
             renderList(mockSearch.value);
+            setActiveTiers();
           });
           mockList.appendChild(row);
         });
@@ -865,24 +882,50 @@
     });
     renderList();
 
-    // Slider Interactive simulation
+    // Slider simulation — mirrors the plugin: the tier list comes from the
+    // selected model, the slider ranges over however many tiers it advertises.
     const sliderWrap = document.getElementById('sliderTrackWrap');
     const sliderFill = document.getElementById('sliderFill');
     const sliderThumb = document.getElementById('sliderThumb');
+    const sliderDots = document.getElementById('sliderDots');
     const effortVal = document.getElementById('effortVal');
-    const tiers = ['Low', 'Medium', 'Max'];
-    let currentTier = 2; // 0, 1, 2
+    const effortNote = document.getElementById('effortNote');
+    let activeTiers = [];
+    let currentTier = 0;
+
+    function activeModel() {
+      return models.find(m => m.active) || models[0];
+    }
+
+    function tierLabel(id) {
+      return EFFORT_LABEL[id] || id;
+    }
+
+    function renderDots() {
+      sliderDots.innerHTML = '';
+      const last = activeTiers.length - 1;
+      if (last < 1) return;
+      activeTiers.forEach((_, index) => {
+        const dot = document.createElement('span');
+        dot.className = 'mock-dot';
+        dot.style.left = `calc(10px + (100% - 20px) * ${index / last})`;
+        sliderDots.appendChild(dot);
+      });
+    }
 
     function updateSlider(tier) {
-      currentTier = Math.max(0, Math.min(2, tier));
-      const percent = (currentTier / 2) * 100;
+      const last = activeTiers.length - 1;
+      currentTier = Math.max(0, Math.min(last, tier));
+      const percent = last > 0 ? (currentTier / last) * 100 : 0;
       sliderFill.style.width = percent + '%';
       sliderThumb.style.left = `calc(${percent}% - ${percent * 0.2}px)`;
-      effortVal.textContent = tiers[currentTier];
+      const label = tierLabel(activeTiers[currentTier]);
+      effortVal.textContent = label;
       sliderWrap.setAttribute('aria-valuenow', String(currentTier));
-      sliderWrap.setAttribute('aria-valuetext', tiers[currentTier]);
+      sliderWrap.setAttribute('aria-valuemax', String(last));
+      sliderWrap.setAttribute('aria-valuetext', label);
 
-      if (currentTier === 2) {
+      if (currentTier === last) {
         sliderFill.classList.add('max-tier');
         startParticles();
       } else {
@@ -891,17 +934,26 @@
       }
     }
 
+    function setActiveTiers() {
+      const model = activeModel();
+      activeTiers = model.tiers;
+      // Auto-raise to the strongest tier on selection, like the plugin does.
+      sliderWrap.setAttribute('aria-valuemin', '0');
+      updateSlider(activeTiers.length - 1);
+      renderDots();
+      effortNote.textContent = `${model.name} 提供 ${activeTiers.length} 档（${activeTiers.map(tierLabel).join(' / ')}）。可选档位由模型目录决定。`;
+    }
+
     sliderWrap.setAttribute('role', 'slider');
     sliderWrap.setAttribute('tabindex', '0');
     sliderWrap.setAttribute('aria-label', '推理等级');
-    sliderWrap.setAttribute('aria-valuemin', '0');
-    sliderWrap.setAttribute('aria-valuemax', '2');
 
     sliderWrap.addEventListener('click', (e) => {
       const rect = sliderWrap.getBoundingClientRect();
+      if (!rect.width || activeTiers.length < 2) return;
       const clickX = e.clientX - rect.left;
       const ratio = Math.max(0, Math.min(1, clickX / rect.width));
-      updateSlider(Math.round(ratio * 2));
+      updateSlider(Math.round(ratio * (activeTiers.length - 1)));
     });
 
     sliderWrap.addEventListener('keydown', (e) => {
@@ -916,7 +968,7 @@
         updateSlider(0);
       } else if (e.key === 'End') {
         e.preventDefault();
-        updateSlider(2);
+        updateSlider(activeTiers.length - 1);
       }
     });
 
@@ -985,7 +1037,7 @@
         seedParticles();
       }
     });
-    updateSlider(2);
+    setActiveTiers();
   </script>
 </body>
 </html>

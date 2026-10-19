@@ -6,6 +6,24 @@
 
 本 CHANGELOG 自 0.1.17 起建立并回填：更早的历史以 GitHub Release 与 git tag 为准。
 
+## [0.4.3] - 2026-10-19
+
+### 修复
+
+- **「已是当前模型」提示改为不透明浮层**：此前该提示用
+  `--dsw-alias-interactive-bg-hover`（浅色 6% / 深色 8% alpha）作底、配
+  `--dsw-alias-label-secondary` 字色，压在模型列表行上时，菜单表面、列表行文字与
+  提示文字三层互相透出，重叠区域无法辨认。现改为实色 `--dsw-alias-bg-overlay`
+  底面 + `--dsw-alias-border-l2` 描边 + 投影，字色提到 `--dsw-alias-label-primary`，
+  内边距 6/10 调为 7/10。
+- 无行为变更：点中当前模型仍保持菜单打开，仍走同一条常驻 live region 播报。
+
+### 测试
+
+- 121 条测试全绿；双 program `typecheck` 绿。
+- 真机核对（浅/深两套主题）：提示层 `background-color` alpha = 1
+  （浅色 `rgb(233,236,242)` / 深色 `rgb(97,102,107)`），字色与底面对比度满足 AA。
+
 ## [0.4.2] - 2026-10-18
 
 ### 变更

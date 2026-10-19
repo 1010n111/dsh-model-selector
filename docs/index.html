@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>dsh-model-selector — DeepSeek Harness 增强模型选择器</title>
   <meta name="description" content="DeepSeek Harness 模型选择器插件：搜索、供应商分组与推理强度调整。">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎚️</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2032%2032%22%3E%3Crect%20x=%222%22%20y=%2212%22%20width=%2228%22%20height=%228%22%20rx=%224%22%20fill=%22%232563eb%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2216%22%20r=%226%22%20fill=%22%23fff%22%20stroke=%22%232563eb%22%20stroke-width=%222.5%22/%3E%3C/svg%3E">
   <style>
     :root {
       --bg: #f8fafc;
@@ -120,88 +120,42 @@
       gap: 6px;
     }
     .nav-btn:hover { color: var(--text-main); }
-    /* Lamp switch: one click = lights on/off.
-       Asymmetric rates follow the Slingshot Lamp case: switch on fast, off slow. */
     .theme-toggle {
-      width: 38px;
-      height: 38px;
+      width: 34px;
+      height: 34px;
       padding: 0;
       background: transparent;
       border: 1px solid var(--card-border);
       color: var(--text-muted);
-      border-radius: 10px;
+      border-radius: 8px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      position: relative;
-      transition: border-color 0.2s ease, background-color 0.2s ease;
+      transition: var(--transition);
     }
     .theme-toggle:hover {
       border-color: var(--text-dim);
+      color: var(--text-main);
       background: var(--card-bg);
     }
-    .theme-toggle:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
-    }
-    .lamp-svg {
-      width: 20px;
-      height: 22px;
-      display: block;
-      overflow: visible;
-      transition: transform 120ms ease-out;
-    }
-    .theme-toggle:active .lamp-svg { transform: translateY(1px); }
-    .lamp-cord {
+    .theme-toggle svg {
+      width: 16px;
+      height: 16px;
       stroke: currentColor;
-      stroke-width: 1.3;
+      fill: none;
+      stroke-width: 1.8;
       stroke-linecap: round;
-      opacity: 0.75;
-    }
-    .lamp-shade {
-      fill: currentColor;
-      fill-opacity: 0.16;
-      stroke: currentColor;
-      stroke-width: 1.3;
       stroke-linejoin: round;
+      display: block;
+      transition: transform 0.2s ease, opacity 0.2s ease;
     }
-    .lamp-bulb {
-      fill: currentColor;
-      fill-opacity: 0.12;
-      stroke: currentColor;
-      stroke-width: 1.2;
-    }
-    .lamp-glow,
-    .lamp-cone {
-      opacity: 0;
-      transition: opacity 520ms ease-in, transform 520ms ease-in;
-    }
-    .theme-toggle[aria-pressed="true"] .lamp-glow,
-    .theme-toggle[aria-pressed="true"] .lamp-cone {
-      opacity: 1;
-      transition: opacity 130ms ease-out, transform 160ms ease-out;
-    }
-    .theme-toggle[aria-pressed="true"] {
-      color: #b45309;
-      border-color: rgba(180, 83, 9, 0.35);
-      background: rgba(251, 191, 36, 0.1);
-    }
-    [data-theme="dark"] .theme-toggle[aria-pressed="true"] {
-      color: #fbbf24;
-      border-color: rgba(251, 191, 36, 0.32);
-      background: rgba(251, 191, 36, 0.12);
-    }
-    .lamp-bulb {
-      transition: fill-opacity 520ms ease-in;
-    }
-    .theme-toggle[aria-pressed="true"] .lamp-bulb {
-      fill-opacity: 0.95;
-      transition: fill-opacity 130ms ease-out;
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .lamp-glow, .lamp-cone, .lamp-bulb { transition: none !important; }
-    }
+    /* Default light mode: show moon icon (hint to switch to dark) */
+    .theme-toggle .icon-sun { display: none; }
+    .theme-toggle .icon-moon { display: block; }
+    /* Dark mode: show sun icon (hint to switch to light) */
+    [data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+    [data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 
     /* Hero */
     .hero {
@@ -671,23 +625,13 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
           GitHub
         </a>
-        <button class="theme-toggle" id="themeBtn" type="button" aria-pressed="true" aria-label="关灯：切换到深色主题" title="开灯 / 关灯">
-          <svg class="lamp-svg" viewBox="0 0 24 26" aria-hidden="true">
-            <defs>
-              <linearGradient id="lampCone" x1="12" y1="13" x2="12" y2="26" gradientUnits="userSpaceOnUse">
-                <stop offset="0" stop-color="#fbbf24" stop-opacity="0.8"/>
-                <stop offset="1" stop-color="#fbbf24" stop-opacity="0"/>
-              </linearGradient>
-              <radialGradient id="lampGlow">
-                <stop offset="0" stop-color="#fde68a" stop-opacity="0.95"/>
-                <stop offset="1" stop-color="#fbbf24" stop-opacity="0"/>
-              </radialGradient>
-            </defs>
-            <path class="lamp-cone" d="M8 13h8l4 13H4Z" fill="url(#lampCone)"/>
-            <circle class="lamp-glow" cx="12" cy="16" r="7.4" fill="url(#lampGlow)"/>
-            <path class="lamp-cord" d="M12 1v6"/>
-            <path class="lamp-shade" d="M4.6 7h14.8L16.2 13H7.8Z"/>
-            <circle class="lamp-bulb" cx="12" cy="15.6" r="2.5"/>
+        <button class="theme-toggle" id="themeBtn" type="button" aria-label="切换浅色与深色主题" title="切换浅色与深色主题">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2"/>
+            <path d="M12 2.5v2.5M12 19v2.5M4.5 4.5l1.8 1.8M17.7 17.7l1.8 1.8M2.5 12H5M19 12h2.5M4.5 19.5l1.8-1.8M17.7 6.3l1.8-1.8"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3a6.5 6.5 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
           </svg>
         </button>
       </div>
@@ -847,9 +791,6 @@
     let isDark = localStorage.getItem('theme') === 'dark' || (localStorage.getItem('theme') === null && prefersDark);
     function applyTheme() {
       document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-      // The lamp is lit in the light theme and off in the dark theme.
-      themeBtn.setAttribute('aria-pressed', String(!isDark));
-      themeBtn.setAttribute('aria-label', isDark ? '开灯：切换到浅色主题' : '关灯：切换到深色主题');
     }
     applyTheme();
     themeBtn.addEventListener('click', () => {

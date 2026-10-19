@@ -315,16 +315,21 @@ export const CSS: string = `
   line-height: 16px;
   font-weight: 500;
 }
+/* 不透明浮层：提示压在模型列表行之上，此前用 hover tint（6%~8% alpha）作底、
+   secondary 作字色，菜单表面 / 列表行 / 提示三层文字互相透出，无法辨认。
+   底色改用实色 overlay 面，加描边与投影分隔，文字提到 label-primary。 */
 .dms-notice {
   position: absolute;
   z-index: 7;
   left: 4px;
   right: 4px;
   bottom: 46px;
-  padding: 6px 10px;
+  padding: 7px 10px;
   border-radius: 8px;
-  background: var(--dsw-alias-interactive-bg-hover);
-  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-bg-overlay);
+  border: 1px solid var(--dsw-alias-border-l2);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+  color: var(--dsw-alias-label-primary);
   font-size: 12px;
   line-height: 18px;
 }
